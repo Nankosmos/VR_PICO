@@ -9,6 +9,7 @@ public class GameUIManager : MonoBehaviour
     [Header("Gameplay UI")]
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI comboText;
+    public TextMeshProUGUI gradeText;
     public TextMeshProUGUI missText;
     public GameObject progressRingRoot;
     public Image progressRing;
@@ -44,10 +45,11 @@ public class GameUIManager : MonoBehaviour
         SetGameplayUIActive(false);
     }
 
-    public void UpdateScore(int score, int combo, int missCount)
+    public void UpdateScore(int score, int combo, int missCount, string grade)
     {
         if (scoreText != null) scoreText.text = "Score: " + score;
         if (comboText != null) comboText.text = "Combo: " + combo;
+        if (gradeText != null) gradeText.text = "Rank: " + grade;
         if (missText != null) missText.gameObject.SetActive(false);
     }
 
@@ -63,6 +65,7 @@ public class GameUIManager : MonoBehaviour
     {
         if (scoreText != null) scoreText.gameObject.SetActive(active);
         if (comboText != null) comboText.gameObject.SetActive(active);
+        if (gradeText != null) gradeText.gameObject.SetActive(active);
         if (missText != null) missText.gameObject.SetActive(false);
         if (progressRingRoot != null) progressRingRoot.SetActive(active);
     }
@@ -73,6 +76,7 @@ public class GameUIManager : MonoBehaviour
 
         ConfigureFollow(scoreText, new Vector3(-sideOffset, topOffset, followDistance), cameraTransform);
         ConfigureFollow(comboText, new Vector3(0f, topOffset, followDistance), cameraTransform);
+        ConfigureFollow(gradeText, new Vector3(sideOffset, topOffset, followDistance), cameraTransform);
 
         if (progressRingRoot != null)
         {

@@ -5,8 +5,9 @@ using UnityEngine.XR;
 
 public class PauseMenuController : MonoBehaviour
 {
-    public static PauseMenuController Instance;
     private const string MasterVolumePrefKey = "MasterVolume";
+
+    public static PauseMenuController Instance;
 
     public enum GameMenuState
     {
@@ -16,11 +17,13 @@ public class PauseMenuController : MonoBehaviour
         Result
     }
 
-    [Header("Menu")]
+    [Header("Start Menu")]
     public GameObject startMenuRoot;
     public GameObject startMenuContentRoot;
-    public GameObject pauseMenuRoot;
     public GameObject startSettingsRoot;
+
+    [Header("Pause Menu")]
+    public GameObject pauseMenuRoot;
 
     [Header("Ray Interaction Objects")]
     public GameObject[] rayInteractionObjects;
@@ -43,79 +46,35 @@ public class PauseMenuController : MonoBehaviour
 
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else if (Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
+        ConfigureSingleton();
+        if (Instance != this) return;
 
-        if (rhythmPlayer == null)
-        {
-            rhythmPlayer = FindFirstObjectByType<RhythmPlayer>();
-        }
-
+        ResolveRuntimeReferences();
         LoadMasterVolume();
-        SetStartMenuActive(true);
-        SetStartMenuContentActive(true);
-        SetPauseMenuActive(false);
-        SetStartSettingsActive(false);
-        SetRayInteractionActive(true);
+        ApplyStartMenuState();
     }
 
     void Update()
     {
-        if (IsKeyboardPausePressed())
-        {
-            TogglePauseMenuOncePerFrame();
-        }
-
-        if (useXRDeviceSecondaryButtons)
-        {
-            bool rightBPressed = IsSecondaryButtonPressed(XRNode.RightHand);
-            bool leftYPressed = IsSecondaryButtonPressed(XRNode.LeftHand);
-
-            if ((rightBPressed && !wasRightBPressed) || (leftYPressed && !wasLeftYPressed))
-            {
-                TogglePauseMenuOncePerFrame();
-            }
-
-            wasRightBPressed = rightBPressed;
-            wasLeftYPressed = leftYPressed;
-        }
+        UpdatePauseInput();
     }
 
     public void EnterStartMenu()
     {
         state = GameMenuState.StartMenu;
-        SetStartMenuActive(true);
-        SetStartMenuContentActive(true);
-        SetPauseMenuActive(false);
-        SetStartSettingsActive(false);
-        SetRayInteractionActive(true);
+        ApplyStartMenuState();
     }
 
     public void EnterGameplay()
     {
         state = GameMenuState.Playing;
-        SetStartMenuActive(false);
-        SetStartMenuContentActive(false);
-        SetPauseMenuActive(false);
-        SetStartSettingsActive(false);
-        SetRayInteractionActive(false);
+        ApplyGameplayState();
     }
 
     public void EnterResult()
     {
         state = GameMenuState.Result;
-        SetStartMenuActive(false);
-        SetStartMenuContentActive(false);
-        SetPauseMenuActive(false);
-        SetStartSettingsActive(false);
-        SetRayInteractionActive(true);
+        ApplyResultState();
     }
 
     public void TogglePauseMenu()
@@ -134,12 +93,9 @@ public class PauseMenuController : MonoBehaviour
     {
         if (state != GameMenuState.Playing) return;
 
-        if (rhythmPlayer == null)
-        {
-            rhythmPlayer = FindFirstObjectByType<RhythmPlayer>();
-        }
-
+        ResolveRuntimeReferences();
         rhythmPlayer?.PauseTrack();
+
         state = GameMenuState.Paused;
         SetGameplayUIActive(false);
         SetActiveNotesVisible(false);
@@ -156,6 +112,7 @@ public class PauseMenuController : MonoBehaviour
         SetActiveNotesVisible(true);
         SetGameplayUIActive(true);
         rhythmPlayer?.ResumeTrack();
+
         state = GameMenuState.Playing;
     }
 
@@ -196,6 +153,7 @@ public class PauseMenuController : MonoBehaviour
         {
             SetStartMenuContentActive(true);
         }
+
         SetRayInteractionActive(true);
     }
 
@@ -222,20 +180,82 @@ public class PauseMenuController : MonoBehaviour
 #endif
     }
 
+    void ConfigureSingleton()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            return;
+        }
+
+        if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    void ResolveRuntimeReferences()
+    {
+        if (rhythmPlayer == null)
+        {
+            rhythmPlayer = FindFirstObjectByType<RhythmPlayer>();
+        }
+    }
+
+    void ApplyStartMenuState()
+    {
+        SetStartMenuActive(true);
+        SetStartMenuContentActive(true);
+        SetPauseMenuActive(false);
+        SetStartSettingsActive(false);
+        SetRayInteractionActive(true);
+    }
+
+    void ApplyGameplayState()
+    {
+        SetStartMenuActive(false);
+        SetStartMenuContentActive(false);
+        SetPauseMenuActive(false);
+        SetStartSettingsActive(false);
+        SetRayInteractionActive(false);
+    }
+
+    void ApplyResultState()
+    {
+        SetStartMenuActive(false);
+        SetStartMenuContentActive(false);
+        SetPauseMenuActive(false);
+        SetStartSettingsActive(false);
+        SetRayInteractionActive(true);
+    }
+
+    void UpdatePauseInput()
+    {
+        if (IsKeyboardPausePressed())
+        {
+            TogglePauseMenuOncePerFrame();
+        }
+
+        if (!useXRDeviceSecondaryButtons) return;
+
+        bool rightBPressed = IsSecondaryButtonPressed(XRNode.RightHand);
+        bool leftYPressed = IsSecondaryButtonPressed(XRNode.LeftHand);
+
+        if ((rightBPressed && !wasRightBPressed) || (leftYPressed && !wasLeftYPressed))
+        {
+            TogglePauseMenuOncePerFrame();
+        }
+
+        wasRightBPressed = rightBPressed;
+        wasLeftYPressed = leftYPressed;
+    }
+
     void TogglePauseMenuOncePerFrame()
     {
         if (lastToggleFrame == Time.frameCount) return;
 
         lastToggleFrame = Time.frameCount;
         TogglePauseMenu();
-    }
-
-    void SetPauseMenuActive(bool active)
-    {
-        if (pauseMenuRoot != null)
-        {
-            pauseMenuRoot.SetActive(active);
-        }
     }
 
     void SetStartMenuActive(bool active)
@@ -259,6 +279,14 @@ public class PauseMenuController : MonoBehaviour
         if (startSettingsRoot != null)
         {
             startSettingsRoot.SetActive(active);
+        }
+    }
+
+    void SetPauseMenuActive(bool active)
+    {
+        if (pauseMenuRoot != null)
+        {
+            pauseMenuRoot.SetActive(active);
         }
     }
 
@@ -305,18 +333,15 @@ public class PauseMenuController : MonoBehaviour
     {
         if (visible)
         {
-            foreach (GameObject noteObject in hiddenPauseNotes)
-            {
-                if (noteObject != null)
-                {
-                    noteObject.SetActive(true);
-                }
-            }
-
-            hiddenPauseNotes = new GameObject[0];
+            RestorePauseHiddenNotes();
             return;
         }
 
+        HideActiveNotesForPause();
+    }
+
+    void HideActiveNotesForPause()
+    {
         NoteOrb[] noteOrbs = FindObjectsByType<NoteOrb>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         HoldNote[] holdNotes = FindObjectsByType<HoldNote>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         hiddenPauseNotes = new GameObject[noteOrbs.Length + holdNotes.Length];
@@ -335,6 +360,19 @@ public class PauseMenuController : MonoBehaviour
             holdNote.gameObject.SetActive(false);
             index++;
         }
+    }
+
+    void RestorePauseHiddenNotes()
+    {
+        foreach (GameObject noteObject in hiddenPauseNotes)
+        {
+            if (noteObject != null)
+            {
+                noteObject.SetActive(true);
+            }
+        }
+
+        hiddenPauseNotes = new GameObject[0];
     }
 
     bool IsSecondaryButtonPressed(XRNode node)

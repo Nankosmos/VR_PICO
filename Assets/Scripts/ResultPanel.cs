@@ -9,6 +9,7 @@ public class ResultPanel : MonoBehaviour
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI missCountText;
     public TextMeshProUGUI maxComboText;
+    public TextMeshProUGUI gradeText;
 
     [Header("Restart Button")]
     public GameObject restartButton;
@@ -20,10 +21,16 @@ public class ResultPanel : MonoBehaviour
 
     public void ShowResult(int score, int missCount, int maxCombo)
     {
+        ShowResult(score, missCount, maxCombo, "");
+    }
+
+    public void ShowResult(int score, int missCount, int maxCombo, string grade)
+    {
         if (gameOverText != null) gameOverText.text = "Game Over";
         if (finalScoreText != null) finalScoreText.text = "Score: " + score;
         if (missCountText != null) missCountText.gameObject.SetActive(false);
         if (maxComboText != null) maxComboText.text = "Max Combo: " + maxCombo;
+        if (gradeText != null) gradeText.text = string.IsNullOrEmpty(grade) ? "" : "Rank: " + grade;
 
         if (restartButton != null)
         {

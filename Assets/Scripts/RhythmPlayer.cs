@@ -63,6 +63,7 @@ public class RhythmPlayer : MonoBehaviour
 
     public bool IsPlaying => isPlaying;
     public bool IsPaused => isPaused;
+    public float TrackTime => audioSource != null ? audioSource.time : 0f;
 
     void Awake()
     {

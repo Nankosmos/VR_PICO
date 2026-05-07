@@ -18,11 +18,19 @@ public class ScoreManager : MonoBehaviour
     [Header("UI")]
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI comboText;
+    public TextMeshProUGUI gradeText;
     public TextMeshProUGUI missText;
     public Transform uiFollowCamera;
     public float uiFollowDistance = 1.25f;
     public float uiTopOffset = 0.42f;
     public float uiSideOffset = 0.55f;
+
+    [Header("Grade")]
+    [Range(0f, 1f)] public float gradeAPercent = 0.7f;
+    [Range(0f, 1f)] public float gradeSPercent = 0.8f;
+    [Range(0f, 1f)] public float gradeSSPercent = 0.9f;
+    [Range(0f, 1f)] public float gradeSSSPercent = 0.98f;
+    public float holdGradeScorePerSecond = 60f;
 
     [Header("Hit Feedback")]
     public HitFeedbackText hitFeedbackText;
@@ -156,6 +164,7 @@ public class ScoreManager : MonoBehaviour
         {
             if (scoreText != null) scoreText.gameObject.SetActive(true);
             if (comboText != null) comboText.gameObject.SetActive(true);
+            if (gradeText != null) gradeText.gameObject.SetActive(true);
             if (missText != null) missText.gameObject.SetActive(false);
             ConfigureScoreUIFollow();
         }
@@ -183,6 +192,7 @@ public class ScoreManager : MonoBehaviour
         {
             if (scoreText != null) scoreText.gameObject.SetActive(false);
             if (comboText != null) comboText.gameObject.SetActive(false);
+            if (gradeText != null) gradeText.gameObject.SetActive(false);
             if (missText != null) missText.gameObject.SetActive(false);
         }
     }
@@ -203,7 +213,7 @@ public class ScoreManager : MonoBehaviour
 
         if (resultPanel != null)
         {
-            resultPanel.ShowResult(score, missCount, maxCombo);
+            resultPanel.ShowResult(score, missCount, maxCombo, GetCurrentGrade());
         }
         else
         {
@@ -256,11 +266,12 @@ public class ScoreManager : MonoBehaviour
     {
         if (GameUIManager.Instance != null)
         {
-            GameUIManager.Instance.UpdateScore(score, combo, missCount);
+            GameUIManager.Instance.UpdateScore(score, combo, missCount, GetCurrentGrade());
         }
 
         if (scoreText != null) scoreText.text = "Score: " + score;
         if (comboText != null) comboText.text = "Combo: " + combo;
+        if (gradeText != null) gradeText.text = "Rank: " + GetCurrentGrade();
         if (missText != null) missText.gameObject.SetActive(false);
     }
 
@@ -269,6 +280,106 @@ public class ScoreManager : MonoBehaviour
         Transform cameraTransform = GetUIFollowCamera();
         ConfigureFollow(scoreText, new Vector3(-uiSideOffset, uiTopOffset, uiFollowDistance), cameraTransform);
         ConfigureFollow(comboText, new Vector3(0f, uiTopOffset, uiFollowDistance), cameraTransform);
+        ConfigureFollow(gradeText, new Vector3(uiSideOffset, uiTopOffset, uiFollowDistance), cameraTransform);
+    }
+
+    string GetCurrentGrade()
+    {
+        float gradeRatio = GetCurrentGradeRatio();
+
+        if (gradeRatio >= gradeSSSPercent) return "SSS";
+        if (gradeRatio >= gradeSSPercent) return "SS";
+        if (gradeRatio >= gradeSPercent) return "S";
+        if (gradeRatio >= gradeAPercent) return "A";
+        return "B";
+    }
+
+    float GetCurrentGradeRatio()
+    {
+        float maxScore = gameEnded ? GetTotalMaxScore() : GetMaxScoreUntil(GetCurrentTrackTime());
+        if (maxScore <= 0f) return 1f;
+
+        return Mathf.Clamp01(score / maxScore);
+    }
+
+    float GetCurrentTrackTime()
+    {
+        if (rhythmPlayer == null)
+        {
+            rhythmPlayer = FindFirstObjectByType<RhythmPlayer>();
+        }
+
+        return rhythmPlayer != null ? rhythmPlayer.TrackTime : 0f;
+    }
+
+    float GetTotalMaxScore()
+    {
+        NoteData track = rhythmPlayer != null ? rhythmPlayer.track : null;
+        if (track == null || track.notes == null) return 0f;
+
+        float total = 0f;
+        foreach (NoteEvent note in track.notes)
+        {
+            total += GetNoteMaxScore(note);
+        }
+
+        return total;
+    }
+
+    float GetMaxScoreUntil(float trackTime)
+    {
+        NoteData track = rhythmPlayer != null ? rhythmPlayer.track : null;
+        if (track == null || track.notes == null) return 0f;
+
+        float total = 0f;
+        foreach (NoteEvent note in track.notes)
+        {
+            total += GetNoteMaxScoreUntil(note, trackTime);
+        }
+
+        return total;
+    }
+
+    float GetNoteMaxScore(NoteEvent note)
+    {
+        if (note.noteType == NoteType.Tap)
+        {
+            return 100f;
+        }
+
+        if (note.noteType == NoteType.Hold)
+        {
+            float holdDuration = Mathf.Max(0f, note.endTime - note.time);
+            return holdDuration * holdGradeScorePerSecond + 100f;
+        }
+
+        return 0f;
+    }
+
+    float GetNoteMaxScoreUntil(NoteEvent note, float trackTime)
+    {
+        if (note.noteType == NoteType.Tap)
+        {
+            return trackTime >= note.time ? 100f : 0f;
+        }
+
+        if (note.noteType == NoteType.Hold)
+        {
+            if (trackTime <= note.time) return 0f;
+
+            float holdEndTime = Mathf.Max(note.time, note.endTime);
+            float scoredHoldTime = Mathf.Clamp(trackTime, note.time, holdEndTime) - note.time;
+            float maxScore = scoredHoldTime * holdGradeScorePerSecond;
+
+            if (trackTime >= holdEndTime)
+            {
+                maxScore += 100f;
+            }
+
+            return maxScore;
+        }
+
+        return 0f;
     }
 
     Transform GetUIFollowCamera()
