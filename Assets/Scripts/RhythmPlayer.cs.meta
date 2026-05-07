@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e924ade944edf844f9d11cbc9c9654f6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - track: {fileID: 11400000, guid: 50cd418d43e466e4dbeae72590afae23, type: 2}
+  - leftOrbPrefab: {fileID: 4890245004433859225, guid: bb43444d505cc5648a914e43fb8fd6bc, type: 3}
+  - rightOrbPrefab: {fileID: 4890245004433859225, guid: d875e31578e04a744b5ce80f0e32a81f, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

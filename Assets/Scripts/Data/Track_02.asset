@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4017440a620c644f9d983e93df0a981, type: 3}
+  m_Name: Track_02
+  m_EditorClassIdentifier: Assembly-CSharp::NoteData
+  music: {fileID: 8300000, guid: a6b231130534f0f4fb823d8ca84da5f9, type: 3}
+  notes:
+  - time: 2
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 3
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 4
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.2, y: -0.1}
+    endPosition: {x: 0, y: 0}
+  - time: 5
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.2, y: -0.1}
+    endPosition: {x: 0, y: 0}
+  - time: 6
+    endTime: 8
+    noteType: 1
+    hand: 0
+    targetPosition: {x: -0.45, y: -0.25}
+    endPosition: {x: -0.1, y: -0.25}
+  - time: 8.5
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.45, y: -0.25}
+    endPosition: {x: 0, y: 0}
+  - time: 9.25
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.45}
+    endPosition: {x: 0, y: 0}
+  - time: 10
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.35, y: -0.45}
+    endPosition: {x: 0, y: 0}
+  - time: 11
+    endTime: 13.5
+    noteType: 1
+    hand: 1
+    targetPosition: {x: 0.45, y: -0.2}
+    endPosition: {x: 0, y: 0.05}
+  - time: 14
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.45, y: -0.15}
+    endPosition: {x: 0, y: 0}
+  - time: 14.75
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.45, y: -0.15}
+    endPosition: {x: 0, y: 0}
+  - time: 15.5
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.15, y: -0.45}
+    endPosition: {x: 0, y: 0}
+  - time: 16.25
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.15, y: -0.45}
+    endPosition: {x: 0, y: 0}
+  - time: 17
+    endTime: 20
+    noteType: 1
+    hand: 0
+    targetPosition: {x: -0.45, y: -0.35}
+    endPosition: {x: 0.15, y: -0.05}
+  - time: 17
+    endTime: 20
+    noteType: 1
+    hand: 1
+    targetPosition: {x: 0.45, y: -0.35}
+    endPosition: {x: -0.15, y: -0.05}
+  - time: 20.5
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.2}
+    endPosition: {x: 0, y: 0}
+  - time: 21
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.35, y: -0.2}
+    endPosition: {x: 0, y: 0}
+  - time: 21.5
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.2, y: 0.05}
+    endPosition: {x: 0, y: 0}
+  - time: 22
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.2, y: 0.05}
+    endPosition: {x: 0, y: 0}
+  - time: 23
+    endTime: 25.5
+    noteType: 1
+    hand: 1
+    targetPosition: {x: 0.3, y: -0.35}
+    endPosition: {x: 0.3, y: 0.1}
+  - time: 26
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.45, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 26.5
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.45, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 27
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.15, y: -0.1}
+    endPosition: {x: 0, y: 0}
+  - time: 27.5
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.15, y: -0.1}
+    endPosition: {x: 0, y: 0}

@@ -1,0 +1,53 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+.utmp/
+
+# Build outputs
+APK/
+*.apk
+*.aab
+
+# Visual Studio / Rider / OS files
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.tmp
+*.bak
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Unity crash and memory captures
+sysinfo.txt
+*.stackdump
+*.dmp
+*.mdmp
+
+# Signing keys / local secrets
+Keystore/
+*.keystore
+*.jks
+
+# Unity Addressables generated data
+[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+
+# Keep meta files tracked
+!*.meta
+
+# Oversized source artwork not required at runtime
+/Assets/Wispy Sky/Extras/SphericalRenderPSD.psd
+/Assets/Wispy Sky/Extras/SphericalRenderPSD.psd.meta
