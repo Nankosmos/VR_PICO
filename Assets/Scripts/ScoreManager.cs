@@ -32,6 +32,7 @@ public class ScoreManager : MonoBehaviour
 
     [Header("End Button")]
     public GameObject endGameButton;
+    public bool showEndGameButtonDuringGameplay = false;
 
     [Header("Runtime")]
     public RhythmPlayer rhythmPlayer;
@@ -161,7 +162,7 @@ public class ScoreManager : MonoBehaviour
 
         if (endGameButton != null)
         {
-            endGameButton.SetActive(true);
+            endGameButton.SetActive(showEndGameButtonDuringGameplay);
         }
 
         if (resultPanel != null)
@@ -208,6 +209,8 @@ public class ScoreManager : MonoBehaviour
         {
             Debug.LogWarning("ScoreManager: result panel is not assigned.");
         }
+
+        PauseMenuController.Instance?.EnterResult();
     }
 
     public void ForceEndGame()

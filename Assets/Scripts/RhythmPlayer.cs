@@ -59,6 +59,10 @@ public class RhythmPlayer : MonoBehaviour
     private Coroutine spawnCoroutine;
     private Coroutine musicEndCoroutine;
     private bool isPlaying;
+    private bool isPaused;
+
+    public bool IsPlaying => isPlaying;
+    public bool IsPaused => isPaused;
 
     void Awake()
     {
@@ -118,6 +122,7 @@ public class RhythmPlayer : MonoBehaviour
         }
 
         isPlaying = true;
+        isPaused = false;
         audioSource.time = 0f;
         audioSource.Play();
 
@@ -138,10 +143,35 @@ public class RhythmPlayer : MonoBehaviour
 
         HideRuntimeUI();
         isPlaying = false;
+        isPaused = false;
 
         if (notifyScoreManager)
         {
             ScoreManager.Instance?.EndGame();
+        }
+    }
+
+    public void PauseTrack()
+    {
+        if (!isPlaying || isPaused) return;
+
+        if (audioSource != null)
+        {
+            audioSource.Pause();
+        }
+
+        isPaused = true;
+    }
+
+    public void ResumeTrack()
+    {
+        if (!isPlaying || !isPaused) return;
+
+        isPaused = false;
+
+        if (audioSource != null)
+        {
+            audioSource.UnPause();
         }
     }
 
@@ -184,6 +214,12 @@ public class RhythmPlayer : MonoBehaviour
     {
         while (noteQueue.Count > 0 && isPlaying)
         {
+            if (isPaused)
+            {
+                yield return null;
+                continue;
+            }
+
             NoteEvent nextNote = noteQueue.Peek();
 
             if (audioSource.time >= nextNote.time - spawnLeadTime)
@@ -204,7 +240,7 @@ public class RhythmPlayer : MonoBehaviour
     {
         yield return null;
 
-        while (audioSource != null && audioSource.isPlaying)
+        while (audioSource != null && (audioSource.isPlaying || isPaused))
         {
             yield return null;
         }
@@ -212,6 +248,7 @@ public class RhythmPlayer : MonoBehaviour
         musicEndCoroutine = null;
         HideRuntimeUI();
         isPlaying = false;
+        isPaused = false;
 
         ScoreManager.Instance?.EndGame();
     }
@@ -381,7 +418,7 @@ public class RhythmPlayer : MonoBehaviour
 
     void UpdateProgressRing()
     {
-        if (!isPlaying || audioSource == null || audioSource.clip == null) return;
+        if (!isPlaying || isPaused || audioSource == null || audioSource.clip == null) return;
 
         float progress = audioSource.clip.length > 0f ? audioSource.time / audioSource.clip.length : 0f;
 

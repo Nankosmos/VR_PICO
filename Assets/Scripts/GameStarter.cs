@@ -39,6 +39,10 @@ public class GameStarter : MonoBehaviour
         }
 
         rhythmPlayer.PlayTrack();
-        gameObject.SetActive(false);
+        if (rhythmPlayer.IsPlaying)
+        {
+            PauseMenuController.Instance?.EnterGameplay();
+            gameObject.SetActive(false);
+        }
     }
 }
