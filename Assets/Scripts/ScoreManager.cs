@@ -97,7 +97,7 @@ public class ScoreManager : MonoBehaviour
         score += 60;
         combo++;
         UpdateMaxCombo();
-        ShowHitFeedback("Good +60", popupPosition);
+        ShowHitFeedback("Great +60", popupPosition);
         UpdateUI();
     }
 
@@ -112,7 +112,7 @@ public class ScoreManager : MonoBehaviour
 
         score += 20;
         combo = 0;
-        ShowHitFeedback("Bad +20", popupPosition);
+        ShowHitFeedback("Nice +20", popupPosition);
         UpdateUI();
     }
 
@@ -127,7 +127,7 @@ public class ScoreManager : MonoBehaviour
 
         missCount++;
         combo = 0;
-        ShowHitFeedback("Miss", popupPosition);
+        ShowHitFeedback("Break", popupPosition);
         UpdateUI();
     }
 

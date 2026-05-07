@@ -154,7 +154,7 @@ public class HitFeedbackText : MonoBehaviour
 
     Color GetFeedbackColor(string message)
     {
-        if (message.StartsWith("Miss")) return new Color(1f, 0.35f, 0.35f);
+        if (message.StartsWith("Break")) return new Color(1f, 0.35f, 0.35f);
         return new Color(1f, 0.88f, 0.48f);
     }
 
@@ -169,9 +169,9 @@ public class HitFeedbackText : MonoBehaviour
     void UpdatePreviewHotkeys()
     {
         if (WasPreviewKeyPressed(PreviewKey.Perfect)) Preview("Perfect +100");
-        if (WasPreviewKeyPressed(PreviewKey.Good)) Preview("Good +60");
-        if (WasPreviewKeyPressed(PreviewKey.Bad)) Preview("Bad +20");
-        if (WasPreviewKeyPressed(PreviewKey.Miss)) Preview("Miss");
+        if (WasPreviewKeyPressed(PreviewKey.Good)) Preview("Great +60");
+        if (WasPreviewKeyPressed(PreviewKey.Bad)) Preview("Nice +20");
+        if (WasPreviewKeyPressed(PreviewKey.Miss)) Preview("Break");
     }
 
     bool WasPreviewKeyPressed(PreviewKey previewKey)

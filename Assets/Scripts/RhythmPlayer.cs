@@ -22,7 +22,7 @@ public class RhythmPlayer : MonoBehaviour
     public Transform rightHand;
 
     [Header("PICO Controller Tracking")]
-    public bool usePicoControllerTrackingOnDevice = true;
+    public bool usePicoControllerTrackingOnDevice = false;
     public float picoControllerColliderRadius = 0.2f;
 
     [Header("Music")]
