@@ -141,7 +141,7 @@ public class NoteOrb : MonoBehaviour
 
         if (hitSound != null)
         {
-            AudioSource.PlayClipAtPoint(hitSound, transform.position);
+            AudioPlayback.PlaySfx(hitSound);
         }
 
         Finish();

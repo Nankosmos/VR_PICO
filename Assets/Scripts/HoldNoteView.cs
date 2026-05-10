@@ -85,7 +85,7 @@ public class HoldNoteView : MonoBehaviour
 
         if (startHitSound != null)
         {
-            AudioSource.PlayClipAtPoint(startHitSound, position);
+            AudioPlayback.PlaySfx(startHitSound);
         }
     }
 

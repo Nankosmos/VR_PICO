@@ -58,6 +58,7 @@ public class RhythmPlayer : MonoBehaviour
     private AudioSource audioSource;
     private Coroutine spawnCoroutine;
     private Coroutine musicEndCoroutine;
+    private Coroutine startPlaybackCoroutine;
     private bool isPlaying;
     private bool isPaused;
 
@@ -75,6 +76,10 @@ public class RhythmPlayer : MonoBehaviour
         }
 
         audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.volume = 1f;
+        audioSource.spatialBlend = 0f;
+        audioSource.priority = 64;
 
         if (playerCamera == null && Camera.main != null)
         {
@@ -98,7 +103,7 @@ public class RhythmPlayer : MonoBehaviour
 
     public void PlayTrack()
     {
-        if (isPlaying)
+        if (isPlaying || startPlaybackCoroutine != null)
         {
             Debug.LogWarning("Track is already playing.");
             return;
@@ -115,20 +120,7 @@ public class RhythmPlayer : MonoBehaviour
             return;
         }
 
-        ShowRuntimeUI();
-
-        if (progressRing != null)
-        {
-            progressRing.fillAmount = 0f;
-        }
-
-        isPlaying = true;
-        isPaused = false;
-        audioSource.time = 0f;
-        audioSource.Play();
-
-        spawnCoroutine = StartCoroutine(SpawnNotes());
-        musicEndCoroutine = StartCoroutine(WaitForMusicEnd());
+        startPlaybackCoroutine = StartCoroutine(StartPlaybackWhenReady());
     }
 
     public void StopTrack(bool notifyScoreManager)
@@ -150,6 +142,74 @@ public class RhythmPlayer : MonoBehaviour
         {
             ScoreManager.Instance?.EndGame();
         }
+    }
+
+    IEnumerator StartPlaybackWhenReady()
+    {
+        AudioClip clip = audioSource.clip;
+
+        if (clip == null)
+        {
+            Debug.LogWarning("RhythmPlayer cannot start because the audio clip is missing.");
+            startPlaybackCoroutine = null;
+            yield break;
+        }
+
+        if (clip.loadState == AudioDataLoadState.Unloaded)
+        {
+            clip.LoadAudioData();
+        }
+
+        while (clip.loadState == AudioDataLoadState.Loading)
+        {
+            yield return null;
+        }
+
+        if (clip.loadState != AudioDataLoadState.Loaded)
+        {
+            Debug.LogWarning("RhythmPlayer audio clip failed to load: " + clip.name + " (" + clip.loadState + ")");
+            startPlaybackCoroutine = null;
+            yield break;
+        }
+
+        ShowRuntimeUI();
+
+        if (progressRing != null)
+        {
+            progressRing.fillAmount = 0f;
+        }
+
+        if (AudioListener.volume <= 0.001f)
+        {
+            PauseMenuController.Instance?.EnsureAudibleVolume();
+        }
+
+        if (AudioListener.volume <= 0.001f)
+        {
+            AudioListener.volume = 1f;
+            Debug.LogWarning("Master audio volume was 0. It has been reset so the track can be heard.");
+        }
+
+        isPlaying = true;
+        isPaused = false;
+        audioSource.time = 0f;
+        audioSource.Play();
+
+        if (!audioSource.isPlaying)
+        {
+            Debug.LogWarning("RhythmPlayer called Play, but AudioSource did not start. clip=" + clip.name
+                + ", volume=" + audioSource.volume
+                + ", listenerVolume=" + AudioListener.volume
+                + ", enabled=" + audioSource.enabled);
+            HideRuntimeUI();
+            isPlaying = false;
+            startPlaybackCoroutine = null;
+            yield break;
+        }
+
+        spawnCoroutine = StartCoroutine(SpawnNotes());
+        musicEndCoroutine = StartCoroutine(WaitForMusicEnd());
+        startPlaybackCoroutine = null;
     }
 
     public void PauseTrack()
@@ -199,6 +259,10 @@ public class RhythmPlayer : MonoBehaviour
         }
 
         audioSource.clip = track.music;
+        if (track.music.loadState == AudioDataLoadState.Unloaded)
+        {
+            track.music.LoadAudioData();
+        }
 
         List<NoteEvent> sortedNotes = new List<NoteEvent>(track.notes);
         sortedNotes.Sort((a, b) => a.time.CompareTo(b.time));
@@ -548,6 +612,12 @@ public class RhythmPlayer : MonoBehaviour
         {
             StopCoroutine(musicEndCoroutine);
             musicEndCoroutine = null;
+        }
+
+        if (startPlaybackCoroutine != null)
+        {
+            StopCoroutine(startPlaybackCoroutine);
+            startPlaybackCoroutine = null;
         }
     }
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using UnityEngine.XR;
 
 public class PauseMenuController : MonoBehaviour
@@ -21,9 +22,11 @@ public class PauseMenuController : MonoBehaviour
     public GameObject startMenuRoot;
     public GameObject startMenuContentRoot;
     public GameObject startSettingsRoot;
+    public Slider masterVolumeSlider;
 
     [Header("Pause Menu")]
     public GameObject pauseMenuRoot;
+    public GameObject menuDimOverlay;
 
     [Header("Ray Interaction Objects")]
     public GameObject[] rayInteractionObjects;
@@ -100,6 +103,7 @@ public class PauseMenuController : MonoBehaviour
         SetGameplayUIActive(false);
         SetActiveNotesVisible(false);
         SetRayInteractionActive(true);
+        SetMenuDimOverlayActive(true);
         SetPauseMenuActive(true);
     }
 
@@ -109,6 +113,7 @@ public class PauseMenuController : MonoBehaviour
 
         SetPauseMenuActive(false);
         SetRayInteractionActive(false);
+        SetMenuDimOverlayActive(false);
         SetActiveNotesVisible(true);
         SetGameplayUIActive(true);
         rhythmPlayer?.ResumeTrack();
@@ -170,6 +175,18 @@ public class PauseMenuController : MonoBehaviour
         return masterVolume;
     }
 
+    public void EnsureAudibleVolume(float fallbackVolume = 1f)
+    {
+        if (AudioListener.volume > 0.001f) return;
+
+        SetMasterVolume(fallbackVolume);
+
+        if (masterVolumeSlider != null)
+        {
+            masterVolumeSlider.SetValueWithoutNotify(masterVolume);
+        }
+    }
+
     public void QuitGame()
     {
 #if UNITY_EDITOR
@@ -208,6 +225,7 @@ public class PauseMenuController : MonoBehaviour
         SetStartMenuContentActive(true);
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
+        SetMenuDimOverlayActive(true);
         SetRayInteractionActive(true);
     }
 
@@ -217,6 +235,7 @@ public class PauseMenuController : MonoBehaviour
         SetStartMenuContentActive(false);
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
+        SetMenuDimOverlayActive(false);
         SetRayInteractionActive(false);
     }
 
@@ -226,6 +245,7 @@ public class PauseMenuController : MonoBehaviour
         SetStartMenuContentActive(false);
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
+        SetMenuDimOverlayActive(true);
         SetRayInteractionActive(true);
     }
 
@@ -287,6 +307,14 @@ public class PauseMenuController : MonoBehaviour
         if (pauseMenuRoot != null)
         {
             pauseMenuRoot.SetActive(active);
+        }
+    }
+
+    void SetMenuDimOverlayActive(bool active)
+    {
+        if (menuDimOverlay != null)
+        {
+            menuDimOverlay.SetActive(active);
         }
     }
 
@@ -401,5 +429,10 @@ public class PauseMenuController : MonoBehaviour
     {
         masterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(MasterVolumePrefKey, 1f));
         AudioListener.volume = masterVolume;
+
+        if (masterVolumeSlider != null)
+        {
+            masterVolumeSlider.SetValueWithoutNotify(masterVolume);
+        }
     }
 }
