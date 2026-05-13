@@ -7,9 +7,6 @@ public class HoldNote : MonoBehaviour
     public Transform startPoint;
     public Transform endPoint;
 
-    [Header("Start Orb")]
-    public GameObject startOrb;
-
     [Header("Start Hit Effect")]
     public GameObject startHitEffectPrefab;
 
@@ -134,7 +131,11 @@ public class HoldNote : MonoBehaviour
 
         if (startPoint != null) startPoint.position = startSpawnPos;
         if (endPoint != null) endPoint.position = endSpawnPos;
-        if (startOrb != null) startOrb.SetActive(true);
+        if (view != null)
+        {
+            view.SetStartOrbActive(true);
+            view.SetEndOrbActive(true);
+        }
 
         UpdateLineRenderer();
     }
@@ -262,6 +263,7 @@ public class HoldNote : MonoBehaviour
     {
         isWaitingForStartHit = false;
         isHolding = true;
+        HapticFeedback.PlayLightHit(targetHand);
         holdTimer = 0f;
         failTimer = 0f;
         pendingHoldScore = 0f;
@@ -381,22 +383,13 @@ public class HoldNote : MonoBehaviour
 
     void CacheView()
     {
-        if (startOrb == null && startPoint != null)
-        {
-            Transform startOrbTransform = startPoint.Find("StartOrb");
-            if (startOrbTransform != null)
-            {
-                startOrb = startOrbTransform.gameObject;
-            }
-        }
-
         view = GetComponent<HoldNoteView>();
         if (view == null)
         {
             view = gameObject.AddComponent<HoldNoteView>();
         }
 
-        view.Configure(startPoint, endPoint, startOrb, startHitEffectPrefab, holdLoopEffectPrefab, useBuiltInHoldLoopEffect, startHitSound);
+        view.Configure(startPoint, endPoint, startHitEffectPrefab, holdLoopEffectPrefab, useBuiltInHoldLoopEffect, startHitSound);
     }
 
     void SetViewEndpoints(Vector3 startPosition, Vector3 endPosition)

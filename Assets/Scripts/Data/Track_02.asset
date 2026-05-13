@@ -12,149 +12,210 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4017440a620c644f9d983e93df0a981, type: 3}
   m_Name: Track_02
   m_EditorClassIdentifier: Assembly-CSharp::NoteData
-  music: {fileID: 8300000, guid: a6b231130534f0f4fb823d8ca84da5f9, type: 3}
+  music: {fileID: 8300000, guid: 2cd22222bcc38ec4db845998f2eaa4ae, type: 3}
   notes:
-  - time: 2
+  - time: 3.8983262
     endTime: 0
     noteType: 0
     hand: 0
-    targetPosition: {x: -0.35, y: -0.35}
+    targetPosition: {x: -0.2666668, y: -0.21041667}
     endPosition: {x: 0, y: 0}
-  - time: 3
+  - time: 5.868515
     endTime: 0
     noteType: 0
     hand: 1
     targetPosition: {x: 0.35, y: -0.35}
     endPosition: {x: 0, y: 0}
-  - time: 4
-    endTime: 0
-    noteType: 0
-    hand: 0
-    targetPosition: {x: -0.2, y: -0.1}
-    endPosition: {x: 0, y: 0}
-  - time: 5
-    endTime: 0
-    noteType: 0
-    hand: 1
-    targetPosition: {x: 0.2, y: -0.1}
-    endPosition: {x: 0, y: 0}
-  - time: 6
-    endTime: 8
+  - time: 9.558969
+    endTime: 10.9833
     noteType: 1
     hand: 0
-    targetPosition: {x: -0.45, y: -0.25}
-    endPosition: {x: -0.1, y: -0.25}
-  - time: 8.5
-    endTime: 0
-    noteType: 0
-    hand: 1
-    targetPosition: {x: 0.45, y: -0.25}
-    endPosition: {x: 0, y: 0}
-  - time: 9.25
-    endTime: 0
-    noteType: 0
-    hand: 0
-    targetPosition: {x: -0.35, y: -0.45}
-    endPosition: {x: 0, y: 0}
-  - time: 10
-    endTime: 0
-    noteType: 0
-    hand: 1
-    targetPosition: {x: 0.35, y: -0.45}
-    endPosition: {x: 0, y: 0}
-  - time: 11
-    endTime: 13.5
+    targetPosition: {x: -0.40606064, y: -0.37569454}
+    endPosition: {x: -0.1257577, y: -0.12291669}
+  - time: 11.476103
+    endTime: 12.900434
     noteType: 1
     hand: 1
-    targetPosition: {x: 0.45, y: -0.2}
-    endPosition: {x: 0, y: 0.05}
-  - time: 14
-    endTime: 0
-    noteType: 0
-    hand: 0
-    targetPosition: {x: -0.45, y: -0.15}
-    endPosition: {x: 0, y: 0}
-  - time: 14.75
+    targetPosition: {x: 0.40606064, y: -0.37569454}
+    endPosition: {x: 0.1257577, y: -0.12291669}
+  - time: 16.133226
     endTime: 0
     noteType: 0
     hand: 1
-    targetPosition: {x: 0.45, y: -0.15}
+    targetPosition: {x: 0.35, y: -0.35}
     endPosition: {x: 0, y: 0}
-  - time: 15.5
+  - time: 16.541388
     endTime: 0
     noteType: 0
     hand: 0
-    targetPosition: {x: -0.15, y: -0.45}
+    targetPosition: {x: -0.35, y: -0.35}
     endPosition: {x: 0, y: 0}
-  - time: 16.25
-    endTime: 0
-    noteType: 0
-    hand: 1
-    targetPosition: {x: 0.15, y: -0.45}
-    endPosition: {x: 0, y: 0}
-  - time: 17
-    endTime: 20
-    noteType: 1
-    hand: 0
-    targetPosition: {x: -0.45, y: -0.35}
-    endPosition: {x: 0.15, y: -0.05}
-  - time: 17
-    endTime: 20
+  - time: 16.874357
+    endTime: 18.024635
     noteType: 1
     hand: 1
-    targetPosition: {x: 0.45, y: -0.35}
-    endPosition: {x: -0.15, y: -0.05}
-  - time: 20.5
+    targetPosition: {x: 0.2848486, y: -0.3284723}
+    endPosition: {x: 0.28333342, y: -0.18541668}
+  - time: 18.260622
     endTime: 0
     noteType: 0
     hand: 0
-    targetPosition: {x: -0.35, y: -0.2}
+    targetPosition: {x: -0.210606, y: -0.3493056}
     endPosition: {x: 0, y: 0}
-  - time: 21
+  - time: 18.495623
     endTime: 0
     noteType: 0
     hand: 1
-    targetPosition: {x: 0.35, y: -0.2}
+    targetPosition: {x: 0.1606061, y: -0.31597227}
     endPosition: {x: 0, y: 0}
-  - time: 21.5
+  - time: 18.767733
     endTime: 0
     noteType: 0
     hand: 0
-    targetPosition: {x: -0.2, y: 0.05}
+    targetPosition: {x: -0.210606, y: -0.31875}
     endPosition: {x: 0, y: 0}
-  - time: 22
+  - time: 19.052208
     endTime: 0
     noteType: 0
     hand: 1
-    targetPosition: {x: 0.2, y: 0.05}
+    targetPosition: {x: 0.1712122, y: -0.36875}
     endPosition: {x: 0, y: 0}
-  - time: 23
-    endTime: 25.5
+  - time: 19.33067
+    endTime: 19.936962
+    noteType: 1
+    hand: 0
+    targetPosition: {x: -0.12272727, y: -0.27708334}
+    endPosition: {x: -0.12424232, y: -0.18819453}
+  - time: 23.64927
+    endTime: 25.38087
     noteType: 1
     hand: 1
-    targetPosition: {x: 0.3, y: -0.35}
-    endPosition: {x: 0.3, y: 0.1}
-  - time: 26
+    targetPosition: {x: 0.35303044, y: -0.35625002}
+    endPosition: {x: 0.15757585, y: -0.17013894}
+  - time: 24.181118
     endTime: 0
     noteType: 0
     hand: 0
-    targetPosition: {x: -0.45, y: -0.35}
+    targetPosition: {x: -0.27878782, y: -0.32013893}
     endPosition: {x: 0, y: 0}
-  - time: 26.5
+  - time: 24.440859
     endTime: 0
     noteType: 0
-    hand: 1
-    targetPosition: {x: 0.45, y: -0.35}
+    hand: 0
+    targetPosition: {x: -0.2196969, y: -0.26875}
     endPosition: {x: 0, y: 0}
-  - time: 27
+  - time: 25.589981
     endTime: 0
     noteType: 0
     hand: 0
     targetPosition: {x: -0.15, y: -0.1}
     endPosition: {x: 0, y: 0}
-  - time: 27.5
+  - time: 25.832096
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.11969705, y: -0.100694545}
+    endPosition: {x: 0, y: 0}
+  - time: 26.084724
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.15, y: -0.1}
+    endPosition: {x: 0, y: 0}
+  - time: 26.376314
+    endTime: 0
+    noteType: 0
+    hand: 1
+    targetPosition: {x: 0.118181854, y: -0.17569454}
+    endPosition: {x: 0, y: 0}
+  - time: 26.616575
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.14696962, y: -0.2604167}
+    endPosition: {x: 0, y: 0}
+  - time: 28.210266
     endTime: 0
     noteType: 0
     hand: 1
     targetPosition: {x: 0.15, y: -0.1}
     endPosition: {x: 0, y: 0}
+  - time: 28.74026
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.45, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 32.260925
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 33.14625
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: 0.00454545, y: -0.32013893}
+    endPosition: {x: 0, y: 0}
+  - time: 34.12337
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 35.7856
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  - time: 46.873924
+    endTime: 49.160248
+    noteType: 1
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: -0.1, y: -0.25}
+  - time: 51.193066
+    endTime: 0
+    noteType: 0
+    hand: 0
+    targetPosition: {x: -0.35, y: -0.35}
+    endPosition: {x: 0, y: 0}
+  markers:
+  - time: 16.125269
+    color: {r: 1, g: 0.2, b: 0, a: 1}
+  - time: 19.934101
+    color: {r: 1, g: 0.2, b: 0, a: 1}
+  - time: 23.670332
+    color: {r: 1, g: 0.2, b: 0.8, a: 1}
+  - time: 27.474146
+    color: {r: 1, g: 0.2, b: 0.8, a: 1}
+  - time: 31.98343
+    color: {r: 0, g: 0.2, b: 0.8, a: 1}
+  - time: 35.055107
+    color: {r: 0, g: 0.2, b: 0.8, a: 1}
+  - time: 39.03317
+    color: {r: 1, g: 0.8702082, b: 0, a: 1}
+  - time: 64.321106
+    color: {r: 1, g: 0.2, b: 0.8, a: 1}
+  shortNotesYellowCues:
+  - startTime: 1.85
+    endTime: 5.04
+    fadeInDuration: 0.5
+    fadeOutDuration: 0.5
+  shortNotesBlueCues:
+  - startTime: 5
+    endTime: 8
+    fadeInDuration: 0.5
+    fadeOutDuration: 0.5
+  longNoteCues:
+  - startTime: 8
+    endTime: 11
+    fadeInDuration: 0.5
+    fadeOutDuration: 0.5
+  pauseCues:
+  - startTime: 12
+    endTime: 15
+    fadeInDuration: 0.5
+    fadeOutDuration: 0.5

@@ -52,13 +52,14 @@ Material:
     - _ReceiveShadows: 1
     - _SpecularHighlights: 1
     - _UV_Based_Toggle: 0
+    - _XRMotionVectorsPass: 1
     - __dirty: 0
     m_Colors:
-    - _Bottom_Color: {r: 0.35452402, g: 0.48125827, b: 0.674, a: 1}
+    - _Bottom_Color: {r: 0.60691816, g: 0.7651096, b: 1, a: 1}
     - _ColorBottom: {r: 0.09540761, g: 0.3018868, b: 0.1930967, a: 0}
     - _ColorTop: {r: 0.4666992, g: 0.08770915, b: 0.6886792, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Top_Color: {r: 0.62820315, g: 0.49728552, b: 0.7075472, a: 1}
+    - _Top_Color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &3196955367743617600

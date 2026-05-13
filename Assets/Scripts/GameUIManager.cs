@@ -8,19 +8,19 @@ public class GameUIManager : MonoBehaviour
 
     [Header("Gameplay UI")]
     public TextMeshProUGUI scoreText;
+    public GameObject comboRoot;
     public TextMeshProUGUI comboText;
-    public TextMeshProUGUI gradeText;
     public TextMeshProUGUI missText;
-    public GameObject progressRingRoot;
-    public Image progressRing;
+    public TMP_FontAsset scoreFontAsset;
+    public Font scoreFontSource;
 
-    [Header("Camera Follow")]
-    public Transform followCamera;
-    public float followDistance = 1.25f;
-    public float topOffset = 0.42f;
-    public float sideOffset = 0.55f;
-    public Vector3 progressRingOffset = new Vector3(0.65f, -0.12f, 1.2f);
-    public float progressRingScale = 0.25f;
+    [Header("Music Progress UI")]
+    public GameObject musicProgressRoot;
+    public RectTransform musicProgressFill;
+    public TextMeshProUGUI musicProgressTimeText;
+
+    private TMP_FontAsset runtimeScoreFontAsset;
+    private float musicProgressFullWidth = -1f;
 
     void Awake()
     {
@@ -36,82 +36,162 @@ public class GameUIManager : MonoBehaviour
 
     public void ShowGameplayUI()
     {
+        FindMusicProgressReferences();
         SetGameplayUIActive(true);
         ConfigureFollow();
     }
 
     public void HideGameplayUI()
     {
+        FindMusicProgressReferences();
         SetGameplayUIActive(false);
     }
 
     public void UpdateScore(int score, int combo, int missCount, string grade)
     {
-        if (scoreText != null) scoreText.text = "Score: " + score;
-        if (comboText != null) comboText.text = "Combo: " + combo;
-        if (gradeText != null) gradeText.text = "Rank: " + grade;
+        ApplyScoreFont();
+
+        if (scoreText != null) scoreText.text = score.ToString();
+        if (comboText != null) comboText.text = combo.ToString();
+        SetComboVisible(combo >= 3);
         if (missText != null) missText.gameObject.SetActive(false);
     }
 
     public void SetProgress(float progress)
     {
-        if (progressRing != null)
+        SetMusicProgress(progress, 0f, 0f);
+    }
+
+    public void SetMusicProgress(float progress, float currentTime, float totalTime)
+    {
+        FindMusicProgressReferences();
+
+        if (musicProgressRoot != null)
         {
-            progressRing.fillAmount = progress;
+            musicProgressRoot.SetActive(true);
+        }
+
+        if (musicProgressFill != null)
+        {
+            if (musicProgressFullWidth < 0f)
+            {
+                musicProgressFullWidth = musicProgressFill.sizeDelta.x;
+            }
+
+            Vector2 size = musicProgressFill.sizeDelta;
+            size.x = musicProgressFullWidth * Mathf.Clamp01(progress);
+            musicProgressFill.sizeDelta = size;
+        }
+
+        if (musicProgressTimeText != null)
+        {
+            musicProgressTimeText.text = FormatTime(currentTime) + "/" + FormatTime(totalTime);
         }
     }
 
     void SetGameplayUIActive(bool active)
     {
+        FindMusicProgressReferences();
+        ApplyScoreFont();
+
         if (scoreText != null) scoreText.gameObject.SetActive(active);
-        if (comboText != null) comboText.gameObject.SetActive(active);
-        if (gradeText != null) gradeText.gameObject.SetActive(active);
+        if (!active)
+        {
+            SetComboVisible(false);
+        }
         if (missText != null) missText.gameObject.SetActive(false);
-        if (progressRingRoot != null) progressRingRoot.SetActive(active);
+        if (musicProgressRoot != null) musicProgressRoot.SetActive(active);
+    }
+
+    void ApplyScoreFont()
+    {
+        TMP_FontAsset fontAsset = scoreFontAsset;
+        if (fontAsset == null && scoreFontSource != null)
+        {
+            if (runtimeScoreFontAsset == null)
+            {
+                runtimeScoreFontAsset = TMP_FontAsset.CreateFontAsset(scoreFontSource);
+            }
+
+            fontAsset = runtimeScoreFontAsset;
+        }
+
+        if (fontAsset != null && scoreText != null && scoreText.font != fontAsset)
+        {
+            scoreText.font = fontAsset;
+        }
+
+        if (fontAsset != null && comboText != null && comboText.font != fontAsset)
+        {
+            comboText.font = fontAsset;
+        }
     }
 
     void ConfigureFollow()
     {
-        Transform cameraTransform = GetFollowCamera();
+        DisableFollow(scoreText);
+        DisableFollow(comboText);
+    }
 
-        ConfigureFollow(scoreText, new Vector3(-sideOffset, topOffset, followDistance), cameraTransform);
-        ConfigureFollow(comboText, new Vector3(0f, topOffset, followDistance), cameraTransform);
-        ConfigureFollow(gradeText, new Vector3(sideOffset, topOffset, followDistance), cameraTransform);
-
-        if (progressRingRoot != null)
+    void SetComboVisible(bool visible)
+    {
+        if (comboRoot != null)
         {
-            UIFollowCamera follow = progressRingRoot.GetComponent<UIFollowCamera>();
-            if (follow == null)
-            {
-                follow = progressRingRoot.AddComponent<UIFollowCamera>();
-            }
-
-            follow.targetCamera = cameraTransform;
-            follow.cameraLocalOffset = progressRingOffset;
-
-            progressRingRoot.transform.localScale = Vector3.one * progressRingScale;
+            comboRoot.SetActive(visible);
+        }
+        else if (comboText != null)
+        {
+            comboText.gameObject.SetActive(visible);
         }
     }
 
-    Transform GetFollowCamera()
-    {
-        if (followCamera != null) return followCamera;
-
-        Camera mainCamera = Camera.main;
-        return mainCamera != null ? mainCamera.transform : null;
-    }
-
-    void ConfigureFollow(TextMeshProUGUI text, Vector3 offset, Transform cameraTransform)
+    void DisableFollow(TextMeshProUGUI text)
     {
         if (text == null) return;
 
         UIFollowCamera follow = text.GetComponent<UIFollowCamera>();
-        if (follow == null)
+        if (follow != null)
         {
-            follow = text.gameObject.AddComponent<UIFollowCamera>();
+            follow.enabled = false;
+        }
+    }
+
+    void FindMusicProgressReferences()
+    {
+        if (musicProgressRoot == null)
+        {
+            GameObject root = GameObject.Find("MusicProgressRoot");
+            if (root != null)
+            {
+                musicProgressRoot = root;
+            }
         }
 
-        follow.targetCamera = cameraTransform;
-        follow.cameraLocalOffset = offset;
+        if (musicProgressFill == null)
+        {
+            GameObject fill = GameObject.Find("MusicProgressFill");
+            if (fill != null)
+            {
+                musicProgressFill = fill.GetComponent<RectTransform>();
+            }
+        }
+
+        if (musicProgressTimeText == null)
+        {
+            GameObject timeText = GameObject.Find("MusicProgressTimeText");
+            if (timeText != null)
+            {
+                musicProgressTimeText = timeText.GetComponent<TextMeshProUGUI>();
+            }
+        }
+    }
+
+    string FormatTime(float seconds)
+    {
+        seconds = Mathf.Max(0f, seconds);
+        int totalSeconds = Mathf.FloorToInt(seconds);
+        int minutes = totalSeconds / 60;
+        int remainingSeconds = totalSeconds % 60;
+        return minutes.ToString("00") + ":" + remainingSeconds.ToString("00");
     }
 }

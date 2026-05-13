@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b0349256e32793046a2aa7a552114ed0
+timeCreated: 1506791540
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 104042
+  packageName: Oculus Rift Touch VR Controller Pack PBR
+  packageVersion: 1.0
+  assetPath: Assets/Touch Controller Skins/Prefabs/Wood_left.prefab
+  uploadId: 218868

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.XR;
 
 public class XRBuildRuntimeGuard : MonoBehaviour
 {
@@ -19,6 +20,9 @@ public class XRBuildRuntimeGuard : MonoBehaviour
     IEnumerator Start()
     {
 #if !UNITY_EDITOR
+        QualitySettings.SetQualityLevel(3, true);
+        XRSettings.eyeTextureResolutionScale = 1f;
+
         float timer = 0f;
 
         while (timer < CleanupDuration)

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4017440a620c644f9d983e93df0a981, type: 3}
   m_Name: Track_01
   m_EditorClassIdentifier: Assembly-CSharp::NoteData
-  music: {fileID: 8300000, guid: a6b231130534f0f4fb823d8ca84da5f9, type: 3}
+  music: {fileID: 8300000, guid: 2d420cdc737de804cbb4d66e273ae4ee, type: 3}
   notes:
   - time: 2
     endTime: 5

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c3ba3928586588445971d51bd553b8d0
+timeCreated: 1506791590
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 104042
+  packageName: Oculus Rift Touch VR Controller Pack PBR
+  packageVersion: 1.0
+  assetPath: Assets/Touch Controller Skins/Models/Materials/MAT_Wood_right.mat
+  uploadId: 218868

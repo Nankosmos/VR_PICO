@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR;
@@ -27,6 +29,21 @@ public class PauseMenuController : MonoBehaviour
     [Header("Pause Menu")]
     public GameObject pauseMenuRoot;
     public GameObject menuDimOverlay;
+    public bool useLegacyMenuDimOverlay = false;
+
+    [Header("Menu Scene Dimming")]
+    public Volume menuDimVolume;
+    public bool createMenuDimVolumeIfMissing = true;
+    public bool configureUICameraForDimming = true;
+    public bool syncUICameraToBaseCamera = true;
+    public string uiCameraName = "UICamera";
+    public string uiNoPostLayerName = "UI_NoPost";
+    public string controllerCameraName = "ControllerCamera";
+    public string controllerNoPostLayerName = "Controller_NoPost";
+    public float menuDimPostExposure = -2.2f;
+    public float menuDimSaturation = -20f;
+    public float menuDimVignetteIntensity = 0.28f;
+    public float menuDimFadeSpeed = 6f;
 
     [Header("Ray Interaction Objects")]
     public GameObject[] rayInteractionObjects;
@@ -46,6 +63,12 @@ public class PauseMenuController : MonoBehaviour
     private bool wasLeftYPressed;
     private GameObject[] hiddenPauseNotes = new GameObject[0];
     private float masterVolume = 1f;
+    private float targetMenuDimWeight;
+    private Camera baseCameraForUI;
+    private Camera uiCameraForMenu;
+    private Camera controllerCameraForMenu;
+    private int uiNoPostLayer = -1;
+    private int controllerNoPostLayer = -1;
 
     void Awake()
     {
@@ -54,12 +77,20 @@ public class PauseMenuController : MonoBehaviour
 
         ResolveRuntimeReferences();
         LoadMasterVolume();
+        ConfigureMenuDimVolume();
+        ConfigureUICameraForMenuDimming();
         ApplyStartMenuState();
     }
 
     void Update()
     {
         UpdatePauseInput();
+        UpdateMenuDimVolume();
+    }
+
+    void LateUpdate()
+    {
+        SyncOverlayCameraTransforms();
     }
 
     public void EnterStartMenu()
@@ -104,6 +135,7 @@ public class PauseMenuController : MonoBehaviour
         SetActiveNotesVisible(false);
         SetRayInteractionActive(true);
         SetMenuDimOverlayActive(true);
+        SetMenuDimActive(true, true);
         SetPauseMenuActive(true);
     }
 
@@ -114,6 +146,7 @@ public class PauseMenuController : MonoBehaviour
         SetPauseMenuActive(false);
         SetRayInteractionActive(false);
         SetMenuDimOverlayActive(false);
+        SetMenuDimActive(false, true);
         SetActiveNotesVisible(true);
         SetGameplayUIActive(true);
         rhythmPlayer?.ResumeTrack();
@@ -125,6 +158,7 @@ public class PauseMenuController : MonoBehaviour
     {
         SetPauseMenuActive(false);
         hiddenPauseNotes = new GameObject[0];
+        SetMenuDimActive(true, true);
 
         if (ScoreManager.Instance != null)
         {
@@ -226,6 +260,7 @@ public class PauseMenuController : MonoBehaviour
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
         SetMenuDimOverlayActive(true);
+        SetMenuDimActive(true, false);
         SetRayInteractionActive(true);
     }
 
@@ -236,6 +271,7 @@ public class PauseMenuController : MonoBehaviour
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
         SetMenuDimOverlayActive(false);
+        SetMenuDimActive(false, true);
         SetRayInteractionActive(false);
     }
 
@@ -246,7 +282,303 @@ public class PauseMenuController : MonoBehaviour
         SetPauseMenuActive(false);
         SetStartSettingsActive(false);
         SetMenuDimOverlayActive(true);
+        SetMenuDimActive(true, true);
         SetRayInteractionActive(true);
+    }
+
+    void ConfigureMenuDimVolume()
+    {
+        if (menuDimVolume == null)
+        {
+            menuDimVolume = FindMenuDimVolume();
+        }
+
+        if (menuDimVolume == null && createMenuDimVolumeIfMissing)
+        {
+            GameObject volumeObject = new GameObject("MenuDimVolume");
+            menuDimVolume = volumeObject.AddComponent<Volume>();
+            menuDimVolume.isGlobal = true;
+            menuDimVolume.priority = 100f;
+            menuDimVolume.weight = 0f;
+        }
+
+        if (menuDimVolume == null) return;
+
+        menuDimVolume.isGlobal = true;
+        menuDimVolume.priority = Mathf.Max(menuDimVolume.priority, 100f);
+        menuDimVolume.weight = 0f;
+
+        VolumeProfile profile = menuDimVolume.profile;
+        if (profile == null)
+        {
+            profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            profile.name = "Menu Dim Volume Profile";
+            menuDimVolume.profile = profile;
+        }
+
+        if (!profile.TryGet(out ColorAdjustments colorAdjustments))
+        {
+            colorAdjustments = profile.Add<ColorAdjustments>(true);
+        }
+
+        colorAdjustments.postExposure.Override(menuDimPostExposure);
+        colorAdjustments.saturation.Override(menuDimSaturation);
+
+        if (!profile.TryGet(out Vignette vignette))
+        {
+            vignette = profile.Add<Vignette>(true);
+        }
+
+        vignette.intensity.Override(menuDimVignetteIntensity);
+        vignette.smoothness.Override(0.45f);
+    }
+
+    Volume FindMenuDimVolume()
+    {
+        Volume[] volumes = FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Volume volume in volumes)
+        {
+            if (volume != null && volume.name == "MenuDimVolume")
+            {
+                return volume;
+            }
+        }
+
+        return null;
+    }
+
+    void ConfigureUICameraForMenuDimming()
+    {
+        if (!configureUICameraForDimming) return;
+
+        uiNoPostLayer = LayerMask.NameToLayer(uiNoPostLayerName);
+        controllerNoPostLayer = LayerMask.NameToLayer(controllerNoPostLayerName);
+        if (uiNoPostLayer < 0)
+        {
+            Debug.LogWarning("PauseMenuController: UI no-post layer was not found: " + uiNoPostLayerName);
+            return;
+        }
+
+        uiCameraForMenu = FindUICamera();
+        if (uiCameraForMenu == null) return;
+
+        Camera uiCamera = uiCameraForMenu;
+        ConfigureOverlayCamera(uiCamera, uiNoPostLayer);
+
+        controllerCameraForMenu = FindCameraByName(controllerCameraName);
+        if (controllerCameraForMenu != null && controllerNoPostLayer >= 0)
+        {
+            ConfigureOverlayCamera(controllerCameraForMenu, controllerNoPostLayer);
+            ApplyControllerLayer();
+        }
+
+        baseCameraForUI = FindBaseCamera(uiCamera);
+        if (baseCameraForUI == null) return;
+
+        Camera baseCamera = baseCameraForUI;
+        baseCamera.cullingMask &= ~(1 << uiNoPostLayer);
+        if (controllerNoPostLayer >= 0)
+        {
+            baseCamera.cullingMask &= ~(1 << controllerNoPostLayer);
+        }
+
+        UniversalAdditionalCameraData baseCameraData = baseCamera.GetUniversalAdditionalCameraData();
+        baseCameraData.enabled = true;
+        baseCameraData.renderType = CameraRenderType.Base;
+        baseCameraData.renderPostProcessing = true;
+
+        if (menuDimVolume != null)
+        {
+            int volumeMask = baseCameraData.volumeLayerMask.value;
+            volumeMask |= 1 << menuDimVolume.gameObject.layer;
+            baseCameraData.volumeLayerMask = volumeMask;
+        }
+
+        if (!baseCameraData.cameraStack.Contains(uiCamera))
+        {
+            baseCameraData.cameraStack.Add(uiCamera);
+        }
+
+        if (controllerCameraForMenu != null && !baseCameraData.cameraStack.Contains(controllerCameraForMenu))
+        {
+            baseCameraData.cameraStack.Add(controllerCameraForMenu);
+        }
+
+        ConfigureCanvasForUICamera(uiCamera);
+        SyncOverlayCameraTransforms();
+    }
+
+    void ConfigureOverlayCamera(Camera overlayCamera, int layer)
+    {
+        overlayCamera.enabled = true;
+        overlayCamera.cullingMask = 1 << layer;
+
+        UniversalAdditionalCameraData overlayCameraData = overlayCamera.GetUniversalAdditionalCameraData();
+        overlayCameraData.enabled = true;
+        overlayCameraData.renderType = CameraRenderType.Overlay;
+        overlayCameraData.renderPostProcessing = false;
+
+        AudioListener audioListener = overlayCamera.GetComponent<AudioListener>();
+        if (audioListener != null)
+        {
+            audioListener.enabled = false;
+        }
+    }
+
+    Camera FindUICamera()
+    {
+        Camera namedCamera = FindCameraByName(uiCameraName);
+        if (namedCamera != null)
+        {
+            return namedCamera;
+        }
+
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Camera camera in cameras)
+        {
+            if (camera != null && camera.cullingMask == LayerMask.GetMask("UI"))
+            {
+                return camera;
+            }
+        }
+
+        return null;
+    }
+
+    Camera FindCameraByName(string cameraName)
+    {
+        GameObject cameraObject = GameObject.Find(cameraName);
+        if (cameraObject != null && cameraObject.TryGetComponent(out Camera namedCamera))
+        {
+            return namedCamera;
+        }
+
+        return null;
+    }
+
+    void ConfigureCanvasForUICamera(Camera uiCamera)
+    {
+        ApplyUILayer(startMenuRoot);
+        ApplyUILayer(startMenuContentRoot);
+        ApplyUILayer(startSettingsRoot);
+        ApplyUILayer(pauseMenuRoot);
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Canvas canvas in canvases)
+        {
+            if (canvas == null) continue;
+
+            ApplyUILayer(canvas.gameObject);
+
+            if (canvas.renderMode == RenderMode.WorldSpace || canvas.renderMode == RenderMode.ScreenSpaceCamera)
+            {
+                canvas.worldCamera = uiCamera;
+            }
+        }
+    }
+
+    void ApplyUILayer(GameObject root)
+    {
+        if (root == null || uiNoPostLayer < 0) return;
+
+        ApplyLayerRecursively(root, uiNoPostLayer);
+    }
+
+    void ApplyControllerLayer()
+    {
+        if (controllerNoPostLayer < 0) return;
+
+        Transform[] transforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Transform transform in transforms)
+        {
+            if (transform == null) continue;
+
+            string objectName = transform.name;
+            bool isControllerRoot =
+                objectName == "Left Controller" ||
+                objectName == "Right Controller" ||
+                objectName == "[Building Block] Left Controller" ||
+                objectName == "[Building Block] Right Controller";
+
+            string objectTag = transform.gameObject.tag;
+            bool isHandTarget = objectTag == "LeftHand" || objectTag == "RightHand";
+            if (!isControllerRoot && !isHandTarget) continue;
+
+            ApplyLayerRecursively(transform.gameObject, controllerNoPostLayer);
+        }
+    }
+
+    void ApplyLayerRecursively(GameObject root, int layer)
+    {
+        if (root == null || layer < 0) return;
+
+        Transform[] transforms = root.GetComponentsInChildren<Transform>(true);
+        foreach (Transform child in transforms)
+        {
+            child.gameObject.layer = layer;
+        }
+    }
+
+    void SyncOverlayCameraTransforms()
+    {
+        if (!syncUICameraToBaseCamera) return;
+        if (baseCameraForUI == null) return;
+
+        SyncOverlayCameraTransform(uiCameraForMenu);
+        SyncOverlayCameraTransform(controllerCameraForMenu);
+    }
+
+    void SyncOverlayCameraTransform(Camera overlayCamera)
+    {
+        if (overlayCamera == null) return;
+
+        Transform baseTransform = baseCameraForUI.transform;
+        Transform overlayTransform = overlayCamera.transform;
+        overlayTransform.SetPositionAndRotation(baseTransform.position, baseTransform.rotation);
+        overlayCamera.fieldOfView = baseCameraForUI.fieldOfView;
+        overlayCamera.nearClipPlane = baseCameraForUI.nearClipPlane;
+        overlayCamera.farClipPlane = baseCameraForUI.farClipPlane;
+    }
+
+    Camera FindBaseCamera(Camera uiCamera)
+    {
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null && mainCamera != uiCamera)
+        {
+            return mainCamera;
+        }
+
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Camera camera in cameras)
+        {
+            if (camera != null && camera != uiCamera && camera.cullingMask != LayerMask.GetMask("UI"))
+            {
+                return camera;
+            }
+        }
+
+        return null;
+    }
+
+    void SetMenuDimActive(bool active, bool fade)
+    {
+        targetMenuDimWeight = active ? 1f : 0f;
+
+        if (!fade && menuDimVolume != null)
+        {
+            menuDimVolume.weight = targetMenuDimWeight;
+        }
+    }
+
+    void UpdateMenuDimVolume()
+    {
+        if (menuDimVolume == null) return;
+
+        menuDimVolume.weight = Mathf.MoveTowards(
+            menuDimVolume.weight,
+            targetMenuDimWeight,
+            menuDimFadeSpeed * Time.unscaledDeltaTime
+        );
     }
 
     void UpdatePauseInput()
@@ -312,6 +644,11 @@ public class PauseMenuController : MonoBehaviour
 
     void SetMenuDimOverlayActive(bool active)
     {
+        if (!useLegacyMenuDimOverlay)
+        {
+            active = false;
+        }
+
         if (menuDimOverlay != null)
         {
             menuDimOverlay.SetActive(active);
@@ -348,7 +685,7 @@ public class PauseMenuController : MonoBehaviour
         {
             if (active)
             {
-                ScoreManager.Instance.ShowScoreUI();
+                ScoreManager.Instance.ResumeScoreUI();
             }
             else
             {

@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af32304fc529f6a46b61517c0a1d1813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NoteOrb
-  hitEffectPrefab: {fileID: 5112403345868107898, guid: 3d06b208ce9760448a75c00d347dda88, type: 3}
+  hitEffectPrefab: {fileID: 185518, guid: e31a509108f693d47abacd801d802b16, type: 3}
   hitSound: {fileID: 8300000, guid: 4ebd21181621b6645b2801f84b32e9f0, type: 3}
   perfectDistance: 0.25
   goodDistance: 0.5

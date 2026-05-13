@@ -185,7 +185,7 @@ MonoBehaviour:
   m_ConeCastAngle: 3
   m_RaycastMask:
     serializedVersion: 2
-    m_Bits: 2147483681
+    m_Bits: 2147483745
   m_RaycastTriggerInteraction: 1
   m_RaycastSnapVolumeInteraction: 1
   m_HitClosestOnly: 0

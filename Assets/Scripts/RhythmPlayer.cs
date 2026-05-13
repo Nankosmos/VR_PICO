@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.XR;
@@ -38,11 +39,31 @@ public class RhythmPlayer : MonoBehaviour
     [Header("Track Simplify")]
     public float fixedHitDepth = 0.5f;
 
-    [Header("Progress Ring")]
-    public GameObject progressRingRoot;
-    public Image progressRing;
-    public Vector3 progressRingCameraOffset = new Vector3(0.65f, -0.12f, 1.2f);
-    public float progressRingScale = 0.25f;
+    [Header("Curved Hit Surface")]
+    public bool useCurvedHitSurface = true;
+    public float hitSurfaceHalfWidth = 0.75f;
+    public float hitSurfaceForwardBulge = 0.45f;
+    public float hitSurfaceCurvePower = 2f;
+
+    [Header("Judgement Line")]
+    public bool showJudgementLine = true;
+    public float judgementLineLocalY = -0.4f;
+    public float judgementLineHalfWidth = 0.7f;
+    public int judgementLineSegments = 32;
+    public float judgementLineThickness = 0.012f;
+    public Color judgementLineColor = new Color(1f, 0.86f, 0.25f, 0.9f);
+    public Material judgementLineMaterial;
+
+    [Header("Music Progress UI")]
+    public GameObject musicProgressRoot;
+    public RectTransform musicProgressFill;
+    public TextMeshProUGUI musicProgressTimeText;
+
+    [Header("Tutorial Images")]
+    public Graphic shortNotesYellowImage;
+    public Graphic shortNotesBlueImage;
+    public Graphic longNoteImage;
+    public Graphic pauseImage;
 
     [Header("Hold Difficulty")]
     public float holdStartHitLateWindow = 0.25f;
@@ -61,6 +82,15 @@ public class RhythmPlayer : MonoBehaviour
     private Coroutine startPlaybackCoroutine;
     private bool isPlaying;
     private bool isPaused;
+    private LineRenderer judgementLine;
+    private GameObject judgementLineObject;
+    private bool hasLockedPlayArea;
+    private Vector3 lockedPlayAreaOrigin;
+    private Vector3 lockedPlayAreaForward;
+    private Vector3 lockedPlayAreaRight;
+    private float musicProgressFullWidth = -1f;
+    private bool musicProgressFillPrepared;
+    private Image musicProgressFillImage;
 
     public bool IsPlaying => isPlaying;
     public bool IsPaused => isPaused;
@@ -93,12 +123,16 @@ public class RhythmPlayer : MonoBehaviour
     {
         PrepareTrack();
         ValidateReferences();
+        EnsureJudgementLine();
+        FindMusicProgressReferences();
         HideRuntimeUI();
     }
 
     void Update()
     {
-        UpdateProgressRing();
+        UpdateGameplayProgress();
+        UpdateTutorialImages();
+        UpdateJudgementLine();
     }
 
     public void PlayTrack()
@@ -134,9 +168,11 @@ public class RhythmPlayer : MonoBehaviour
             audioSource.time = 0f;
         }
 
+        ResetMusicProgressUI();
         HideRuntimeUI();
         isPlaying = false;
         isPaused = false;
+        hasLockedPlayArea = false;
 
         if (notifyScoreManager)
         {
@@ -172,12 +208,9 @@ public class RhythmPlayer : MonoBehaviour
             yield break;
         }
 
+        LockPlayAreaToCurrentCamera();
         ShowRuntimeUI();
-
-        if (progressRing != null)
-        {
-            progressRing.fillAmount = 0f;
-        }
+        UpdateGameplayProgress();
 
         if (AudioListener.volume <= 0.001f)
         {
@@ -203,6 +236,7 @@ public class RhythmPlayer : MonoBehaviour
                 + ", enabled=" + audioSource.enabled);
             HideRuntimeUI();
             isPlaying = false;
+            hasLockedPlayArea = false;
             startPlaybackCoroutine = null;
             yield break;
         }
@@ -222,6 +256,7 @@ public class RhythmPlayer : MonoBehaviour
         }
 
         isPaused = true;
+        HideTutorialImages();
     }
 
     public void ResumeTrack()
@@ -314,6 +349,7 @@ public class RhythmPlayer : MonoBehaviour
         HideRuntimeUI();
         isPlaying = false;
         isPaused = false;
+        hasLockedPlayArea = false;
 
         ScoreManager.Instance?.EndGame();
     }
@@ -427,16 +463,29 @@ public class RhythmPlayer : MonoBehaviour
 
     Vector3 GetPlayableLocalPosition(Vector2 localPosition)
     {
-        return new Vector3(localPosition.x, localPosition.y, fixedHitDepth);
+        return new Vector3(localPosition.x, localPosition.y, GetHitSurfaceDepth(localPosition.x));
+    }
+
+    float GetHitSurfaceDepth(float localX)
+    {
+        if (!useCurvedHitSurface)
+        {
+            return fixedHitDepth;
+        }
+
+        float halfWidth = Mathf.Max(0.01f, hitSurfaceHalfWidth);
+        float normalizedDistanceFromCenter = Mathf.Clamp01(Mathf.Abs(localX) / halfWidth);
+        float centerWeight = 1f - Mathf.Pow(normalizedDistanceFromCenter, Mathf.Max(0.01f, hitSurfaceCurvePower));
+        return fixedHitDepth + hitSurfaceForwardBulge * centerWeight;
     }
 
     Vector3 GetWorldPositionFromCamera(Vector3 localPosition)
     {
-        Vector3 camPos = playerCamera.position;
-        Vector3 forward = GetFlatForward();
-        Vector3 right = GetFlatRight();
+        Vector3 origin = GetPlayAreaOrigin();
+        Vector3 forward = GetPlayAreaForward();
+        Vector3 right = GetPlayAreaRight();
 
-        return camPos
+        return origin
             + right * localPosition.x
             + Vector3.up * localPosition.y
             + forward * localPosition.z;
@@ -444,11 +493,11 @@ public class RhythmPlayer : MonoBehaviour
 
     Vector3 GetSpawnPosition(Vector3 localPosition)
     {
-        Vector3 camPos = playerCamera.position;
-        Vector3 forward = GetFlatForward();
-        Vector3 right = GetFlatRight();
+        Vector3 origin = GetPlayAreaOrigin();
+        Vector3 forward = GetPlayAreaForward();
+        Vector3 right = GetPlayAreaRight();
 
-        return camPos
+        return origin
             + right * localPosition.x
             + Vector3.up * localPosition.y
             + forward * spawnForwardDistance;
@@ -456,7 +505,7 @@ public class RhythmPlayer : MonoBehaviour
 
     Vector3 GetEndPosition(Vector3 hitPos)
     {
-        return hitPos - GetFlatForward() * endBehindDistance;
+        return hitPos - GetPlayAreaForward() * endBehindDistance;
     }
 
     Vector3 GetFlatForward()
@@ -481,30 +530,63 @@ public class RhythmPlayer : MonoBehaviour
         return right.normalized;
     }
 
-    void UpdateProgressRing()
+    void LockPlayAreaToCurrentCamera()
     {
-        if (!isPlaying || isPaused || audioSource == null || audioSource.clip == null) return;
+        if (playerCamera == null) return;
+
+        lockedPlayAreaOrigin = playerCamera.position;
+        lockedPlayAreaForward = GetFlatForward();
+        lockedPlayAreaRight = GetFlatRight();
+        hasLockedPlayArea = true;
+    }
+
+    Vector3 GetPlayAreaOrigin()
+    {
+        if (hasLockedPlayArea)
+        {
+            return lockedPlayAreaOrigin;
+        }
+
+        return playerCamera != null ? playerCamera.position : transform.position;
+    }
+
+    Vector3 GetPlayAreaForward()
+    {
+        if (hasLockedPlayArea)
+        {
+            return lockedPlayAreaForward;
+        }
+
+        return playerCamera != null ? GetFlatForward() : transform.forward;
+    }
+
+    Vector3 GetPlayAreaRight()
+    {
+        if (hasLockedPlayArea)
+        {
+            return lockedPlayAreaRight;
+        }
+
+        return playerCamera != null ? GetFlatRight() : transform.right;
+    }
+
+    void UpdateGameplayProgress()
+    {
+        if (!isPlaying || audioSource == null || audioSource.clip == null) return;
 
         float progress = audioSource.clip.length > 0f ? audioSource.time / audioSource.clip.length : 0f;
-
-        if (progressRing != null)
-        {
-            progressRing.fillAmount = progress;
-        }
+        UpdateMusicProgressUI(progress, audioSource.time, audioSource.clip.length);
 
         if (GameUIManager.Instance != null)
         {
-            GameUIManager.Instance.SetProgress(progress);
+            GameUIManager.Instance.SetMusicProgress(progress, audioSource.time, audioSource.clip.length);
         }
     }
 
     void ShowRuntimeUI()
     {
-        if (progressRingRoot != null)
-        {
-            progressRingRoot.SetActive(true);
-            ConfigureProgressRingFollow();
-        }
+        ShowJudgementLine();
+        ShowMusicProgressUI();
 
         if (GameUIManager.Instance != null)
         {
@@ -514,10 +596,9 @@ public class RhythmPlayer : MonoBehaviour
 
     void HideRuntimeUI()
     {
-        if (progressRingRoot != null)
-        {
-            progressRingRoot.SetActive(false);
-        }
+        HideJudgementLine();
+        HideMusicProgressUI();
+        HideTutorialImages();
 
         if (GameUIManager.Instance != null)
         {
@@ -525,19 +606,326 @@ public class RhythmPlayer : MonoBehaviour
         }
     }
 
-    void ConfigureProgressRingFollow()
+    void FindMusicProgressReferences()
     {
-        if (progressRingRoot == null) return;
-
-        UIFollowCamera follow = progressRingRoot.GetComponent<UIFollowCamera>();
-        if (follow == null)
+        if (musicProgressRoot == null)
         {
-            follow = progressRingRoot.AddComponent<UIFollowCamera>();
+            musicProgressRoot = FindGameObjectByExactOrTrimmedName("MusicProgressRoot");
         }
 
-        follow.targetCamera = playerCamera;
-        follow.cameraLocalOffset = progressRingCameraOffset;
-        progressRingRoot.transform.localScale = Vector3.one * progressRingScale;
+        if (musicProgressFill == null)
+        {
+            GameObject fill = FindGameObjectByExactOrTrimmedName("MusicProgressFill");
+            if (fill != null)
+            {
+                musicProgressFill = fill.GetComponent<RectTransform>();
+            }
+        }
+
+        if (musicProgressTimeText == null)
+        {
+            GameObject timeText = FindGameObjectByExactOrTrimmedName("MusicProgressTimeText");
+            if (timeText != null)
+            {
+                musicProgressTimeText = timeText.GetComponent<TextMeshProUGUI>();
+            }
+        }
+    }
+
+    void FindTutorialImageReferences()
+    {
+        if (shortNotesYellowImage == null)
+        {
+            shortNotesYellowImage = FindGraphicByName("ShortNotes_Yellow");
+        }
+
+        if (shortNotesBlueImage == null)
+        {
+            shortNotesBlueImage = FindGraphicByName("ShortNotes_Blue");
+        }
+
+        if (longNoteImage == null)
+        {
+            longNoteImage = FindGraphicByName("LongNote");
+        }
+
+        if (pauseImage == null)
+        {
+            pauseImage = FindGraphicByName("Pause");
+        }
+    }
+
+    Graphic FindGraphicByName(string objectName)
+    {
+        GameObject imageObject = FindGameObjectByExactOrTrimmedName(objectName);
+        return imageObject != null ? imageObject.GetComponent<Graphic>() : null;
+    }
+
+    void UpdateTutorialImages()
+    {
+        if (!isPlaying || isPaused || track == null) return;
+
+        FindTutorialImageReferences();
+
+        float time = TrackTime;
+        ApplyTutorialImageAlpha(shortNotesYellowImage, GetTutorialAlpha(track.shortNotesYellowCues, time));
+        ApplyTutorialImageAlpha(shortNotesBlueImage, GetTutorialAlpha(track.shortNotesBlueCues, time));
+        ApplyTutorialImageAlpha(longNoteImage, GetTutorialAlpha(track.longNoteCues, time));
+        ApplyTutorialImageAlpha(pauseImage, GetTutorialAlpha(track.pauseCues, time));
+    }
+
+    float GetTutorialAlpha(TutorialImageCue[] cues, float time)
+    {
+        if (cues == null) return 0f;
+
+        float alpha = 0f;
+        foreach (TutorialImageCue cue in cues)
+        {
+            if (cue == null) continue;
+
+            float start = Mathf.Min(cue.startTime, cue.endTime);
+            float end = Mathf.Max(cue.startTime, cue.endTime);
+            if (time < start || time > end) continue;
+
+            float cueAlpha = 1f;
+            if (cue.fadeInDuration > 0f && time < start + cue.fadeInDuration)
+            {
+                cueAlpha = Mathf.InverseLerp(start, start + cue.fadeInDuration, time);
+            }
+
+            if (cue.fadeOutDuration > 0f && time > end - cue.fadeOutDuration)
+            {
+                cueAlpha = Mathf.Min(cueAlpha, Mathf.InverseLerp(end, end - cue.fadeOutDuration, time));
+            }
+
+            alpha = Mathf.Max(alpha, cueAlpha);
+        }
+
+        return Mathf.Clamp01(alpha);
+    }
+
+    void ApplyTutorialImageAlpha(Graphic graphic, float alpha)
+    {
+        if (graphic == null) return;
+
+        bool shouldBeActive = alpha > 0.001f;
+        if (graphic.gameObject.activeSelf != shouldBeActive)
+        {
+            graphic.gameObject.SetActive(shouldBeActive);
+        }
+
+        Color color = graphic.color;
+        color.a = alpha;
+        graphic.color = color;
+    }
+
+    void HideTutorialImages()
+    {
+        FindTutorialImageReferences();
+        ApplyTutorialImageAlpha(shortNotesYellowImage, 0f);
+        ApplyTutorialImageAlpha(shortNotesBlueImage, 0f);
+        ApplyTutorialImageAlpha(longNoteImage, 0f);
+        ApplyTutorialImageAlpha(pauseImage, 0f);
+    }
+
+    GameObject FindGameObjectByExactOrTrimmedName(string targetName)
+    {
+        Transform[] transforms = Resources.FindObjectsOfTypeAll<Transform>();
+        foreach (Transform foundTransform in transforms)
+        {
+            if (foundTransform.hideFlags != HideFlags.None) continue;
+
+            string objectName = foundTransform.gameObject.name;
+            if (objectName == targetName || objectName.Trim() == targetName)
+            {
+                return foundTransform.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    void ShowMusicProgressUI()
+    {
+        FindMusicProgressReferences();
+
+        if (musicProgressRoot != null)
+        {
+            musicProgressRoot.SetActive(true);
+        }
+
+        ResetMusicProgressUI();
+    }
+
+    void HideMusicProgressUI()
+    {
+        if (musicProgressRoot != null)
+        {
+            musicProgressRoot.SetActive(false);
+        }
+    }
+
+    void ResetMusicProgressUI()
+    {
+        float totalTime = audioSource != null && audioSource.clip != null ? audioSource.clip.length : 0f;
+        UpdateMusicProgressUI(0f, 0f, totalTime);
+    }
+
+    void UpdateMusicProgressUI(float progress, float currentTime, float totalTime)
+    {
+        FindMusicProgressReferences();
+
+        if (musicProgressFill != null)
+        {
+            PrepareMusicProgressFill();
+            float clampedProgress = Mathf.Clamp01(progress);
+
+            if (musicProgressFillImage != null)
+            {
+                musicProgressFillImage.fillAmount = clampedProgress;
+            }
+            else
+            {
+                Vector2 size = musicProgressFill.sizeDelta;
+                size.x = musicProgressFullWidth * clampedProgress;
+                musicProgressFill.sizeDelta = size;
+            }
+        }
+
+        if (musicProgressTimeText != null)
+        {
+            musicProgressTimeText.text = FormatTime(currentTime) + "/" + FormatTime(totalTime);
+        }
+    }
+
+    void PrepareMusicProgressFill()
+    {
+        if (musicProgressFill == null || musicProgressFillPrepared) return;
+
+        musicProgressFillImage = musicProgressFill.GetComponent<Image>();
+        musicProgressFullWidth = musicProgressFill.sizeDelta.x;
+
+        if (musicProgressFillImage != null)
+        {
+            musicProgressFillImage.type = Image.Type.Filled;
+            musicProgressFillImage.fillMethod = Image.FillMethod.Horizontal;
+            musicProgressFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+            musicProgressFillImage.fillAmount = 0f;
+        }
+        else
+        {
+            Vector2 pivot = musicProgressFill.pivot;
+            if (!Mathf.Approximately(pivot.x, 0f))
+            {
+                Vector2 anchoredPosition = musicProgressFill.anchoredPosition;
+                anchoredPosition.x -= pivot.x * musicProgressFullWidth;
+                musicProgressFill.pivot = new Vector2(0f, pivot.y);
+                musicProgressFill.anchoredPosition = anchoredPosition;
+            }
+        }
+
+        musicProgressFillPrepared = true;
+    }
+
+    string FormatTime(float seconds)
+    {
+        seconds = Mathf.Max(0f, seconds);
+        int totalSeconds = Mathf.FloorToInt(seconds);
+        int minutes = totalSeconds / 60;
+        int remainingSeconds = totalSeconds % 60;
+        return minutes.ToString("00") + ":" + remainingSeconds.ToString("00");
+    }
+
+    void EnsureJudgementLine()
+    {
+        if (judgementLineObject != null) return;
+
+        judgementLineObject = new GameObject("JudgementLine");
+        judgementLineObject.transform.SetParent(transform, false);
+
+        judgementLine = judgementLineObject.AddComponent<LineRenderer>();
+        judgementLine.useWorldSpace = true;
+        judgementLine.numCapVertices = 4;
+        judgementLine.numCornerVertices = 4;
+        judgementLine.alignment = LineAlignment.View;
+
+        Material material = judgementLineMaterial;
+        if (material == null)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+            {
+                shader = Shader.Find("Universal Render Pipeline/Unlit");
+            }
+
+            if (shader != null)
+            {
+                material = new Material(shader);
+            }
+        }
+
+        if (material != null)
+        {
+            judgementLine.material = material;
+        }
+        ApplyJudgementLineStyle();
+        HideJudgementLine();
+    }
+
+    void ApplyJudgementLineStyle()
+    {
+        if (judgementLine == null) return;
+
+        judgementLine.startWidth = judgementLineThickness;
+        judgementLine.endWidth = judgementLineThickness;
+        judgementLine.startColor = judgementLineColor;
+        judgementLine.endColor = judgementLineColor;
+    }
+
+    void ShowJudgementLine()
+    {
+        if (!showJudgementLine) return;
+
+        EnsureJudgementLine();
+
+        if (judgementLineObject != null)
+        {
+            judgementLineObject.SetActive(true);
+            UpdateJudgementLine();
+        }
+    }
+
+    void HideJudgementLine()
+    {
+        if (judgementLineObject != null)
+        {
+            judgementLineObject.SetActive(false);
+        }
+    }
+
+    void UpdateJudgementLine()
+    {
+        if (judgementLineObject == null || !judgementLineObject.activeSelf) return;
+
+        if (!showJudgementLine || playerCamera == null)
+        {
+            HideJudgementLine();
+            return;
+        }
+
+        ApplyJudgementLineStyle();
+
+        int segmentCount = Mathf.Max(1, judgementLineSegments);
+        judgementLine.positionCount = segmentCount + 1;
+
+        for (int i = 0; i <= segmentCount; i++)
+        {
+            float t = i / (float)segmentCount;
+            float localX = Mathf.Lerp(-judgementLineHalfWidth, judgementLineHalfWidth, t);
+            float localZ = GetHitSurfaceDepth(localX);
+            Vector3 point = GetWorldPositionFromCamera(new Vector3(localX, judgementLineLocalY, localZ));
+            judgementLine.SetPosition(i, point);
+        }
     }
 
     Transform GetHandTransform(HandType hand)

@@ -16,14 +16,20 @@ public class ScoreManager : MonoBehaviour
     public int missCount = 0;
 
     [Header("UI")]
+    public GameObject scoreRankPanel;
     public TextMeshProUGUI scoreText;
+    public GameObject comboRoot;
     public TextMeshProUGUI comboText;
-    public TextMeshProUGUI gradeText;
     public TextMeshProUGUI missText;
-    public Transform uiFollowCamera;
-    public float uiFollowDistance = 1.25f;
-    public float uiTopOffset = 0.42f;
-    public float uiSideOffset = 0.55f;
+    public TMP_FontAsset scoreFontAsset;
+    public Font scoreFontSource;
+
+    [Header("Rank Images")]
+    public GameObject rankBImage;
+    public GameObject rankAImage;
+    public GameObject rankSImage;
+    public GameObject rankSSImage;
+    public GameObject rankSSSImage;
 
     [Header("Grade")]
     [Range(0f, 1f)] public float gradeAPercent = 0.7f;
@@ -46,6 +52,9 @@ public class ScoreManager : MonoBehaviour
     public RhythmPlayer rhythmPlayer;
 
     private bool gameEnded;
+    private TMP_FontAsset runtimeScoreFontAsset;
+    private bool scoreUiVisible;
+    private bool hasRankJudgement;
 
     void Awake()
     {
@@ -62,6 +71,11 @@ public class ScoreManager : MonoBehaviour
         if (rhythmPlayer == null)
         {
             rhythmPlayer = FindFirstObjectByType<RhythmPlayer>();
+        }
+
+        if (scoreRankPanel == null)
+        {
+            scoreRankPanel = GameObject.Find("ScoreRankPanel");
         }
     }
 
@@ -89,6 +103,7 @@ public class ScoreManager : MonoBehaviour
 
         score += 100;
         combo++;
+        hasRankJudgement = true;
         UpdateMaxCombo();
         ShowHitFeedback("Perfect +100", popupPosition);
         UpdateUI();
@@ -105,6 +120,7 @@ public class ScoreManager : MonoBehaviour
 
         score += 60;
         combo++;
+        hasRankJudgement = true;
         UpdateMaxCombo();
         ShowHitFeedback("Great +60", popupPosition);
         UpdateUI();
@@ -121,6 +137,7 @@ public class ScoreManager : MonoBehaviour
 
         score += 20;
         combo = 0;
+        hasRankJudgement = true;
         ShowHitFeedback("Nice +20", popupPosition);
         UpdateUI();
     }
@@ -136,6 +153,7 @@ public class ScoreManager : MonoBehaviour
 
         missCount++;
         combo = 0;
+        hasRankJudgement = true;
         ShowHitFeedback("Break", popupPosition);
         UpdateUI();
     }
@@ -145,16 +163,37 @@ public class ScoreManager : MonoBehaviour
         if (gameEnded) return;
 
         score += value;
+        if (value > 0)
+        {
+            hasRankJudgement = true;
+        }
+
         UpdateUI();
     }
 
     public void ShowScoreUI()
     {
-        score = 0;
-        combo = 0;
-        maxCombo = 0;
-        missCount = 0;
+        ShowScoreUI(true);
+    }
+
+    public void ResumeScoreUI()
+    {
+        ShowScoreUI(false);
+    }
+
+    void ShowScoreUI(bool resetStats)
+    {
+        if (resetStats)
+        {
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            missCount = 0;
+            hasRankJudgement = false;
+        }
+
         gameEnded = false;
+        scoreUiVisible = true;
 
         if (GameUIManager.Instance != null)
         {
@@ -162,9 +201,9 @@ public class ScoreManager : MonoBehaviour
         }
         else
         {
+            if (scoreRankPanel != null) scoreRankPanel.SetActive(true);
             if (scoreText != null) scoreText.gameObject.SetActive(true);
-            if (comboText != null) comboText.gameObject.SetActive(true);
-            if (gradeText != null) gradeText.gameObject.SetActive(true);
+            SetComboVisible(false);
             if (missText != null) missText.gameObject.SetActive(false);
             ConfigureScoreUIFollow();
         }
@@ -184,23 +223,29 @@ public class ScoreManager : MonoBehaviour
 
     public void HideScoreUI()
     {
+        scoreUiVisible = false;
+
         if (GameUIManager.Instance != null)
         {
             GameUIManager.Instance.HideGameplayUI();
         }
         else
         {
+            if (scoreRankPanel != null) scoreRankPanel.SetActive(false);
             if (scoreText != null) scoreText.gameObject.SetActive(false);
-            if (comboText != null) comboText.gameObject.SetActive(false);
-            if (gradeText != null) gradeText.gameObject.SetActive(false);
+            SetComboVisible(false);
             if (missText != null) missText.gameObject.SetActive(false);
         }
+
+        if (scoreRankPanel != null) scoreRankPanel.SetActive(false);
+        HideRankImages();
     }
 
     public void EndGame()
     {
         if (gameEnded) return;
 
+        string finalGrade = hasRankJudgement ? GetCurrentGrade() : "B";
         gameEnded = true;
         ClearActiveNotes();
 
@@ -213,7 +258,7 @@ public class ScoreManager : MonoBehaviour
 
         if (resultPanel != null)
         {
-            resultPanel.ShowResult(score, missCount, maxCombo, GetCurrentGrade());
+            resultPanel.ShowResult(score, missCount, maxCombo, finalGrade);
         }
         else
         {
@@ -243,15 +288,9 @@ public class ScoreManager : MonoBehaviour
     void ShowHitFeedback(string message, Vector3? popupPosition)
     {
         if (hitFeedbackText == null) return;
+        if (!popupPosition.HasValue) return;
 
-        if (popupPosition.HasValue)
-        {
-            hitFeedbackText.ShowFeedback(message, popupPosition.Value);
-        }
-        else
-        {
-            hitFeedbackText.ShowFeedback(message);
-        }
+        hitFeedbackText.ShowFeedback(message, popupPosition.Value);
     }
 
     void UpdateMaxCombo()
@@ -264,23 +303,95 @@ public class ScoreManager : MonoBehaviour
 
     void UpdateUI()
     {
+        ApplyScoreFont();
+
         if (GameUIManager.Instance != null)
         {
             GameUIManager.Instance.UpdateScore(score, combo, missCount, GetCurrentGrade());
         }
 
-        if (scoreText != null) scoreText.text = "Score: " + score;
-        if (comboText != null) comboText.text = "Combo: " + combo;
-        if (gradeText != null) gradeText.text = "Rank: " + GetCurrentGrade();
+        if (scoreText != null) scoreText.text = score.ToString();
+        if (scoreRankPanel != null) scoreRankPanel.SetActive(scoreUiVisible);
+        if (comboText != null) comboText.text = combo.ToString();
+        SetComboVisible(scoreUiVisible && combo >= 3);
         if (missText != null) missText.gameObject.SetActive(false);
+
+        if (scoreUiVisible && hasRankJudgement)
+        {
+            UpdateRankImage(GetCurrentGrade());
+        }
+        else
+        {
+            HideRankImages();
+        }
     }
 
     void ConfigureScoreUIFollow()
     {
-        Transform cameraTransform = GetUIFollowCamera();
-        ConfigureFollow(scoreText, new Vector3(-uiSideOffset, uiTopOffset, uiFollowDistance), cameraTransform);
-        ConfigureFollow(comboText, new Vector3(0f, uiTopOffset, uiFollowDistance), cameraTransform);
-        ConfigureFollow(gradeText, new Vector3(uiSideOffset, uiTopOffset, uiFollowDistance), cameraTransform);
+        ApplyScoreFont();
+        DisableFollow(scoreText);
+        DisableFollow(comboText);
+    }
+
+    void UpdateRankImage(string grade)
+    {
+        SetRankImagesActive(
+            grade == "B",
+            grade == "A",
+            grade == "S",
+            grade == "SS",
+            grade == "SSS"
+        );
+    }
+
+    void HideRankImages()
+    {
+        SetRankImagesActive(false, false, false, false, false);
+    }
+
+    void SetRankImagesActive(bool showB, bool showA, bool showS, bool showSS, bool showSSS)
+    {
+        if (rankBImage != null) rankBImage.SetActive(showB);
+        if (rankAImage != null) rankAImage.SetActive(showA);
+        if (rankSImage != null) rankSImage.SetActive(showS);
+        if (rankSSImage != null) rankSSImage.SetActive(showSS);
+        if (rankSSSImage != null) rankSSSImage.SetActive(showSSS);
+    }
+
+    void ApplyScoreFont()
+    {
+        TMP_FontAsset fontAsset = scoreFontAsset;
+        if (fontAsset == null && scoreFontSource != null)
+        {
+            if (runtimeScoreFontAsset == null)
+            {
+                runtimeScoreFontAsset = TMP_FontAsset.CreateFontAsset(scoreFontSource);
+            }
+
+            fontAsset = runtimeScoreFontAsset;
+        }
+
+        if (fontAsset != null && scoreText != null && scoreText.font != fontAsset)
+        {
+            scoreText.font = fontAsset;
+        }
+
+        if (fontAsset != null && comboText != null && comboText.font != fontAsset)
+        {
+            comboText.font = fontAsset;
+        }
+    }
+
+    void SetComboVisible(bool visible)
+    {
+        if (comboRoot != null)
+        {
+            comboRoot.SetActive(visible);
+        }
+        else if (comboText != null)
+        {
+            comboText.gameObject.SetActive(visible);
+        }
     }
 
     string GetCurrentGrade()
@@ -382,26 +493,15 @@ public class ScoreManager : MonoBehaviour
         return 0f;
     }
 
-    Transform GetUIFollowCamera()
-    {
-        if (uiFollowCamera != null) return uiFollowCamera;
-
-        Camera mainCamera = Camera.main;
-        return mainCamera != null ? mainCamera.transform : null;
-    }
-
-    void ConfigureFollow(TextMeshProUGUI text, Vector3 offset, Transform cameraTransform)
+    void DisableFollow(TextMeshProUGUI text)
     {
         if (text == null) return;
 
         UIFollowCamera follow = text.GetComponent<UIFollowCamera>();
-        if (follow == null)
+        if (follow != null)
         {
-            follow = text.gameObject.AddComponent<UIFollowCamera>();
+            follow.enabled = false;
         }
-
-        follow.targetCamera = cameraTransform;
-        follow.cameraLocalOffset = offset;
     }
 
     void ClearActiveNotes()

@@ -114,6 +114,7 @@ public class NoteOrb : MonoBehaviour
     void Hit()
     {
         isHit = true;
+        HapticFeedback.PlayLightHit(targetHand);
 
         float distance = Vector3.Distance(transform.position, hitPosition);
 

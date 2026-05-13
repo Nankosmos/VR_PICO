@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3dbc5fe101c644d3da23136e4a684ee8
+timeCreated: 1509470355
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 104042
+  packageName: Oculus Rift Touch VR Controller Pack PBR
+  packageVersion: 1.0
+  assetPath: Assets/Touch Controller Skins/Models/Materials/OculusControllerMaterial_Inst.mat
+  uploadId: 218868
